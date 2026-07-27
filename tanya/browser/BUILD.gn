@@ -1,0 +1,14 @@
+source_set("browser") {
+  sources = [
+    "tanya_proxy_service_factory.cc",
+    "tanya_proxy_service_factory.h",
+  ]
+
+  deps = [
+    "//base",
+    "//chrome/browser/profiles:profile",
+    "//components/keyed_service/content",
+    "//components/keyed_service/core",
+    "//tanya/components/proxy/browser",
+  ]
+}

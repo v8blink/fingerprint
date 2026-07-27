@@ -479,7 +479,8 @@ std::unique_ptr<content::WebContents> CreateTargetContents(
   scoped_refptr<content::SiteInstance> initial_site_instance_for_new_contents =
       params.opener ? params.opener->GetSiteInstance()
                     : tab_util::GetSiteInstanceForNewTab(
-                          params.browser->GetProfile(), url);
+                          params.browser->GetProfile(), url,
+                          params.source_site_instance.get());
 
   WebContents::CreateParams create_params(
       params.browser->GetProfile(), initial_site_instance_for_new_contents);
@@ -501,7 +502,13 @@ std::unique_ptr<content::WebContents> CreateTargetContents(
   }
 #endif
 
-  return WebContents::Create(create_params);
+  std::unique_ptr<content::WebContents> contents =
+      WebContents::Create(create_params);
+  if (!params.opener) {
+    tab_util::RecordTanyaInitialStoragePartitionOnWebContents(
+        contents.get(), initial_site_instance_for_new_contents.get());
+  }
+  return contents;
 }
 
 }  // namespace

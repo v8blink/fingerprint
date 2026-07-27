@@ -1,0 +1,9 @@
+source_set("browser") {
+  sources = [
+    "tanya_proxy_service.cc",
+    "tanya_proxy_service.h"
+  ]
+  deps = [
+    "//net"
+  ]
+}

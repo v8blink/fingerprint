@@ -9,7 +9,10 @@
 #include "base/auto_reset.h"
 #include "base/check.h"
 #include "base/memory/ptr_util.h"
+#include "chrome/browser/container/tab_container_manager.h"
+#include "chrome/browser/container/tab_container_manager_factory.h"
 #include "chrome/browser/profiles/profile.h"
+#include "chrome/browser/tab_contents/tab_util.h"
 #include "chrome/browser/ui/browser_window/public/browser_window_features.h"
 #include "chrome/browser/ui/browser_window/public/browser_window_interface.h"
 #include "chrome/browser/ui/tab_helpers.h"
@@ -28,7 +31,11 @@
 #include "components/tabs/public/tab_group_tab_collection.h"
 #include "components/web_modal/modal_dialog_host.h"
 #include "components/web_modal/web_contents_modal_dialog_host.h"
+#include "content/public/browser/browser_context.h"
 #include "content/public/browser/navigation_controller.h"
+#include "content/public/browser/site_instance.h"
+#include "content/public/browser/storage_partition.h"
+#include "content/public/browser/storage_partition_config.h"
 #include "content/public/browser/visibility.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_contents_observer.h"
@@ -68,9 +75,42 @@ TabModel::TabModel(std::unique_ptr<content::WebContents> contents,
     tab_features_->Init(
         *this, Profile::FromBrowserContext(contents_->GetBrowserContext()));
   }
+
+  content::BrowserContext* browser_context = contents_->GetBrowserContext();
+  if (browser_context) {
+    TabContainerManager* container_manager =
+        tab_container::GetForBrowserContext(browser_context);
+    if (container_manager) {
+      ContainerCreationOptions options;
+      const std::string tanya_recorded_partition =
+          tab_util::GetTanyaInitialStoragePartitionIdIfRecorded(contents_);
+      if (!tanya_recorded_partition.empty()) {
+        options.custom_partition_id = tanya_recorded_partition;
+      } else if (content::SiteInstance* site_instance =
+                     contents_->GetSiteInstance()) {
+        content::StoragePartition* site_partition =
+            browser_context->GetStoragePartition(site_instance);
+        if (site_partition) {
+          const std::string& partition_name =
+              site_partition->GetConfig().partition_name();
+          if (partition_name.starts_with("tab_partition_")) {
+            options.custom_partition_id = partition_name;
+          }
+        }
+      }
+      container_manager->CreateContainerForTab(contents_, options);
+    }
+  }
 }
 
 TabModel::~TabModel() {
+  content::BrowserContext* browser_context = contents_->GetBrowserContext();
+  if (browser_context) {
+    if (TabContainerManager* container_manager =
+            tab_container::GetForBrowserContext(browser_context)) {
+      container_manager->DestroyContainerForTab(contents_);
+    }
+  }
   contents_->RemoveUserData(tabs::TabLookupFromWebContents::UserDataKey());
 }
 

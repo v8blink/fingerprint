@@ -1,0 +1,229 @@
+
+assert(is_win || is_mac || is_linux || is_chromeos || is_android)
+
+source_set("profile_encryption_key") {
+  public = [
+    "profile_encryption_key_prefs.h",
+    "profile_encryption_key_provider.h",
+  ]
+
+  sources = [
+    "profile_encryption_key_prefs.cc",
+    "profile_encryption_key_prefs.h",
+    "profile_encryption_key_provider.cc",
+    "profile_encryption_key_provider.h",
+  ]
+
+  public_deps = [
+    "//base",
+    "//chrome/browser/profiles:profile",
+    "//components/prefs",
+    "//components/pref_registry",
+  ]
+
+  deps = [
+    "//base",
+    "//chrome/browser/profiles:profile",
+    "//components/prefs",
+    "//components/pref_registry",
+  ]
+}
+
+if (!is_android) {
+  source_set("tab_container") {
+
+    configs -= [ "//build/config/clang:find_bad_constructs" ]
+
+    public = [
+      "createProfiles.h",
+      "encryption_util.h",
+      "tanya_profile_persist_state.h",
+      "tanya_proxy_csv.h",
+      "profile_load_apply.h",
+      "tab_container_manager.h",
+      "tab_container_manager_factory.h",
+    ]
+
+    sources = [
+      "tanya_profile_persist_state.cc",
+      "tanya_profile_persist_state.h",
+      "tanya_proxy_csv.cc",
+      "tanya_proxy_csv.h",
+      "profile_load_apply.cc",
+      "profile_load_apply.h",
+      "container_cookie_manager.cc",
+      "container_cookie_manager.h",
+      "container_dns_manager.cc",
+      "container_dns_manager.h",
+      "container_fingerprint_manager.cc",
+      "container_fingerprint_manager.h",
+      "container_metrics_manager.cc",
+      "container_metrics_manager.h",
+      "container_network_context_manager.cc",
+      "container_network_context_manager.h",
+      "container_network_debug_tracer.cc",
+      "container_network_debug_tracer.h",
+      "container_partition_tracker.cc",
+      "container_partition_tracker.h",
+      "container_proxy_manager.cc",
+      "container_proxy_manager.h",
+      "container_restore_manager.cc",
+      "container_restore_manager.h",
+      "container_security_manager.cc",
+      "container_security_manager.h",
+      "container_session_manager.cc",
+      "container_session_manager.h",
+      "container_useragent_manager.cc",
+      "container_useragent_manager.h",
+      "createProfiles.cc",
+      "createProfiles.h",
+      "encryption_util.cc",
+      "encryption_util.h",
+      "tab_container_manager.cc",
+      "tab_container_manager.h",
+      "tab_container_manager_factory.cc",
+      "tab_container_manager_factory.h",
+    ]
+
+    public_deps = [
+      "//base",
+      "//content/public/browser",
+      "//net",
+    ]
+
+    deps = [
+      "//base",
+      "//chrome/browser:browser_public_dependencies",
+      "//chrome/browser/profiles:profile",
+      "//components/prefs",
+      "//components/sessions:sessions",
+      "//content/public/browser",
+      "//crypto",
+      "//tanya/components/proxy/browser",
+      "//net",
+      "//ui/base",
+      "//url",
+    ]
+  }
+
+  source_set("cookie_apply") {
+    public = [ "cookie_apply.h" ]
+
+    sources = [
+      "cookie_apply.cc",
+      "cookie_apply.h",
+    ]
+
+    deps = [
+      "//base",
+      "//mojo/public/cpp/bindings",
+      "//net",
+      "//services/network/public/mojom",
+      "//url",
+    ]
+  }
+
+  source_set("tab_session_applier_iface") {
+    configs -= [ "//build/config/clang:find_bad_constructs" ]
+
+    public = [
+      "tab_session_applier.h",
+      "tab_session_applier_factory.h",
+    ]
+
+    sources = [
+      "tab_session_applier.h",
+      "tab_session_applier_factory.h",
+    ]
+
+    public_deps = [
+      ":cookie_apply",
+      "//base",
+      "//chrome/browser/profiles:profile",
+      "//components/keyed_service/core",
+      "//components/sessions:sessions",
+      "//net",
+      "//url",
+    ]
+  }
+
+  source_set("tab_session_applier") {
+    configs -= [ "//build/config/clang:find_bad_constructs" ]
+
+    sources = [
+      "tab_session_applier.cc",
+      "tab_session_applier_factory.cc",
+    ]
+
+    public_deps = [
+      ":tab_session_applier_iface",
+    ]
+
+    deps = [
+      ":cookie_apply",
+      ":tab_container",
+      "//base",
+      "//chrome/browser/profiles:profile",
+      "//chrome/browser/ui",
+      "//chrome/browser/ui/tab_contents",
+      "//chrome/browser/ui/tabs",
+      "//components/keyed_service/core",
+      "//components/keyed_service/content",
+      "//components/sessions:sessions",
+      "//components/tabs:public",
+      "//content/public/browser",
+      "//tanya/browser",
+      "//tanya/components/proxy/browser",
+      "//net",
+      "//services/network/public/mojom",
+      "//url",
+    ]
+  }
+
+  source_set("cookie_portability") {
+    public = [
+      "cookie_audit_log.h",
+      "cookie_portability_codec.h",
+      "profile_exporter.h",
+      "cookie_portability_service.h",
+      "cookie_portability_service_factory.h",
+    ]
+
+    sources = [
+      "cookie_audit_log.cc",
+      "cookie_audit_log.h",
+      "cookie_portability_codec.cc",
+      "cookie_portability_codec.h",
+      "profile_exporter.cc",
+      "profile_exporter.h",
+      "cookie_portability_service.cc",
+      "cookie_portability_service.h",
+      "cookie_portability_service_factory.cc",
+      "cookie_portability_service_factory.h",
+    ]
+
+    public_deps = [
+
+      ":tab_session_applier_iface",
+      "//base",
+      "//components/keyed_service/core",
+      "//components/sessions:sessions",
+      "//net",
+    ]
+
+    deps = [
+      ":profile_encryption_key",
+      ":tab_container",
+      ":tab_session_applier_iface",
+      "//base",
+      "//chrome/browser/profiles:profile",
+      "//components/keyed_service/content",
+      "//components/keyed_service/core",
+      "//components/sessions:sessions",
+      "//content/public/browser",
+      "//crypto",
+      "//net",
+      "//url",
+    ]
+  }
+}
