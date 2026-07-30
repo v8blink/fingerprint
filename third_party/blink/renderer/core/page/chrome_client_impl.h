@@ -335,8 +335,13 @@ class CORE_EXPORT ChromeClientImpl final : public ChromeClient {
 
   void OnFirstContentfulPaint(const base::TimeDelta& duration) override;
 
+  const fingerprint::FingerprintPolicy& GetFingerprintPolicy() const override;
+
  private:
   bool IsChromeClientImpl() const override { return true; }
+
+  mutable std::unique_ptr<fingerprint::FingerprintPolicy>
+      fingerprint_policy_cache_;
 
   void SetCursorInternal(const ui::Cursor&, LocalFrame*);
 

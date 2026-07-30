@@ -33,6 +33,7 @@
 #include "cc/metrics/begin_main_frame_metrics.h"
 #include "cc/paint/draw_image.h"
 #include "cc/trees/paint_holding_reason.h"
+#include "components/fingerprint/fingerprint_policy.h"
 #include "components/viz/common/surfaces/frame_sink_id.h"
 #include "third_party/blink/public/common/dom_storage/session_storage_namespace_id.h"
 #include "third_party/blink/public/common/input/web_gesture_event.h"
@@ -625,6 +626,8 @@ class CORE_EXPORT ChromeClient : public GarbageCollected<ChromeClient> {
   virtual float ZoomFactorForViewportLayout() { return 1; }
 
   virtual void OnFirstContentfulPaint(const base::TimeDelta& duration) {}
+
+  virtual const fingerprint::FingerprintPolicy& GetFingerprintPolicy() const;
 
  protected:
   ChromeClient() = default;

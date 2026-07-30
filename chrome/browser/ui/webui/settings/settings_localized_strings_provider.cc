@@ -841,6 +841,14 @@ void AddDownloadsStrings(content::WebUIDataSource* html_source) {
   html_source->AddLocalizedStrings(kLocalizedStrings);
 }
 
+void AddFingerprintStrings(content::WebUIDataSource* html_source) {
+  static constexpr webui::LocalizedString kLocalizedStrings[] = {
+      {"fingerprintPageTitle", IDS_SETTINGS_FINGERPRINT_PAGE_TITLE},
+      {"fingerprintNewTab", IDS_SETTINGS_FINGERPRINT_NEW_TAB},
+  };
+  html_source->AddLocalizedStrings(kLocalizedStrings);
+}
+
 bool IsWebActuationDisabledForEnterprise(Profile* profile) {
   if (!base::FeatureList::IsEnabled(features::kGlicActor)) {
     return false;
@@ -4514,6 +4522,7 @@ void AddLocalizedStrings(content::WebUIDataSource* html_source,
   AddClearBrowsingDataStrings(html_source, profile);
   AddCommonStrings(html_source, profile);
   AddDownloadsStrings(html_source);
+  AddFingerprintStrings(html_source);
   AddExtensionsStrings(html_source);
   AddGlicStrings(html_source, profile);
   AddPerformanceStrings(html_source);

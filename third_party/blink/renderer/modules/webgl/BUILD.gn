@@ -195,6 +195,7 @@ blink_modules_sources("webgl") {
 
   public_deps = [ "//device/vr/public/mojom:vr_service_blink" ]
   deps = [
+    "//components/fingerprint",
     "//device/vr/buildflags",
     "//gpu/command_buffer/client:gles2_implementation",
     "//gpu/command_buffer/client:gles2_interface",

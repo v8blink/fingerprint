@@ -132,6 +132,23 @@ bool StructTraits<blink::mojom::RendererPreferencesDataView,
 
   out->view_source_line_wrap_enabled = data.view_source_line_wrap_enabled();
 
+  out->fingerprint_enabled = data.fingerprint_enabled();
+  if (!data.ReadFingerprintPlatform(&out->fingerprint_platform) ||
+      !data.ReadFingerprintPlatformVersion(
+          &out->fingerprint_platform_version) ||
+      !data.ReadFingerprintBrand(&out->fingerprint_brand) ||
+      !data.ReadFingerprintBrandVersion(&out->fingerprint_brand_version) ||
+      !data.ReadFingerprintGpuVendor(&out->fingerprint_gpu_vendor) ||
+      !data.ReadFingerprintGpuRenderer(&out->fingerprint_gpu_renderer) ||
+      !data.ReadFingerprintHardwareConcurrency(
+          &out->fingerprint_hardware_concurrency) ||
+      !data.ReadFingerprintDeviceMemory(&out->fingerprint_device_memory) ||
+      !data.ReadFingerprintTimezone(&out->fingerprint_timezone) ||
+      !data.ReadFingerprintLanguages(&out->fingerprint_languages) ||
+      !data.ReadFingerprintScreen(&out->fingerprint_screen)) {
+    return false;
+  }
+
   return true;
 }
 

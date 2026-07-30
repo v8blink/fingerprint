@@ -1,0 +1,15 @@
+
+component("fingerprint") {
+  sources = [
+    "fingerprint_policy.cc",
+    "fingerprint_policy.h",
+    "switches.cc",
+    "switches.h",
+  ]
+
+  defines = [ "IS_FINGERPRINT_IMPL" ]
+
+  deps = [
+    "//base",
+  ]
+}

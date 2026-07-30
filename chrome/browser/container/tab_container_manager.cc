@@ -31,8 +31,6 @@
 
 namespace {
 
-constexpr const char* kLogPrefix = "[TabContainerManager]";
-
 constexpr size_t kMaxContainersPerMinute = 100;
 constexpr base::TimeDelta kTurnoverWindow = base::Minutes(1);
 
@@ -185,8 +183,8 @@ std::string TabContainerManager::CreateContainerForTab(
   }
 
   std::string container_id = GenerateContainerId();
-  std::string partition_id = options.custom_partition_id.empty() 
-                             ? GeneratePartitionId() 
+  std::string partition_id = options.custom_partition_id.empty()
+                             ? GeneratePartitionId()
                              : options.custom_partition_id;
 
   ;

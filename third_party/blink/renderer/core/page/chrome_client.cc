@@ -283,4 +283,9 @@ bool ChromeClient::Print(LocalFrame* frame) {
   return true;
 }
 
+const fingerprint::FingerprintPolicy& ChromeClient::GetFingerprintPolicy()
+    const {
+  return fingerprint::FingerprintPolicy::ProcessDefault();
+}
+
 }  // namespace blink

@@ -3,6 +3,7 @@ include_rules = [
     "+device/vr/buildflags/buildflags.h",
     "+device/vr/public/mojom/vr_service.mojom-blink.h",
     "+device/vr/public/mojom/vr_service.mojom-blink-forward.h",
+    "+components/fingerprint",
     "+components/viz/common/gpu/raster_context_provider.h",
     "+components/viz/common/resources/shared_image_format_utils.h",
     "+gpu/GLES2/gl2extchromium.h",

@@ -81,6 +81,12 @@
           $i18n{performancePageTitle}
           <cr-ripple></cr-ripple>
         </a>
+        <a role="menuitem" id="fingerprint" href="/fingerprint"
+            class="cr-nav-menu-item">
+          <cr-icon icon="settings:security"></cr-icon>
+          $i18n{fingerprintPageTitle}
+          <cr-ripple></cr-ripple>
+        </a>
         <a role="menuitem" href="/ai"
             hidden="[[!showAiPageMenuItem_(showAiPage_, pageVisibility_.ai)]]"
             on-click="onAiPageClick_"

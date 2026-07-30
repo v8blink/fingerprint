@@ -249,6 +249,7 @@
 #include "components/embedder_support/origin_trials/origin_trials_settings_storage.h"
 #include "components/embedder_support/switches.h"
 #include "components/embedder_support/user_agent_utils.h"
+#include "components/fingerprint/switches.h"
 #include "components/enterprise/buildflags/buildflags.h"
 #include "components/enterprise/common/proto/connectors.pb.h"
 #include "components/enterprise/content/clipboard_restriction_service.h"
@@ -2933,6 +2934,23 @@ void ChromeContentBrowserClient::AppendExtraCommandLineSwitches(
   };
   command_line->CopySwitchesFrom(browser_command_line,
                                  kDinosaurEasterEggSwitches);
+
+  static const char* const kFingerprintSwitches[] = {
+      fingerprint::kFingerprint,
+      fingerprint::kFingerprintPlatform,
+      fingerprint::kFingerprintPlatformVersion,
+      fingerprint::kFingerprintBrand,
+      fingerprint::kFingerprintBrandVersion,
+      fingerprint::kFingerprintDeviceModel,
+      fingerprint::kFingerprintGpuVendor,
+      fingerprint::kFingerprintGpuRenderer,
+      fingerprint::kFingerprintHardwareConcurrency,
+      fingerprint::kFingerprintDeviceMemory,
+      fingerprint::kFingerprintTimezone,
+      fingerprint::kFingerprintLanguages,
+      fingerprint::kFingerprintScreen,
+  };
+  command_line->CopySwitchesFrom(browser_command_line, kFingerprintSwitches);
 
 #if BUILDFLAG(IS_CHROMEOS)
   // On Chrome OS need to pass primary user homedir (in multi-profiles session).

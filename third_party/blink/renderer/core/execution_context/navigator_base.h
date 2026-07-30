@@ -55,6 +55,7 @@ class CORE_EXPORT NavigatorBase : public ScriptWrappable,
   void Trace(Visitor* visitor) const override;
 
   unsigned int hardwareConcurrency() const override;
+  float deviceMemory() const override;
 
  protected:
   ExecutionContext* GetUAExecutionContext() const override;

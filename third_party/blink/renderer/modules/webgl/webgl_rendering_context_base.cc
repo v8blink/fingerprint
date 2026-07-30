@@ -45,6 +45,8 @@
 #include "base/trace_event/memory_dump_manager.h"
 #include "base/trace_event/trace_event.h"
 #include "build/build_config.h"
+#include "base/logging.h"
+#include "components/fingerprint/fingerprint_policy.h"
 #include "components/viz/common/gpu/raster_context_provider.h"
 #include "components/viz/common/resources/shared_image_format_utils.h"
 #include "device/vr/buildflags/buildflags.h"
@@ -4201,6 +4203,13 @@ ScriptValue WebGLRenderingContextBase::getParameter(ScriptState* script_state,
       return ScriptValue::CreateNull(script_state->GetIsolate());
     case WebGLDebugRendererInfo::kUnmaskedRendererWebgl:
       if (ExtensionEnabled(kWebGLDebugRendererInfoName)) {
+        const fingerprint::FingerprintPolicy& policy =
+            fingerprint::FingerprintPolicy::ProcessDefault();
+        if (policy.enabled() && !policy.IsSurfaceDisabled("gpu") &&
+            !policy.gpu_renderer().empty()) {
+          return WebGLAny(script_state,
+                          String::FromUtf8(policy.gpu_renderer()));
+        }
         return WebGLAny(script_state,
                         String(ContextGL()->GetString(GL_RENDERER)));
       }
@@ -4210,6 +4219,13 @@ ScriptValue WebGLRenderingContextBase::getParameter(ScriptState* script_state,
       return ScriptValue::CreateNull(script_state->GetIsolate());
     case WebGLDebugRendererInfo::kUnmaskedVendorWebgl:
       if (ExtensionEnabled(kWebGLDebugRendererInfoName)) {
+        const fingerprint::FingerprintPolicy& policy =
+            fingerprint::FingerprintPolicy::ProcessDefault();
+        if (policy.enabled() && !policy.IsSurfaceDisabled("gpu") &&
+            !policy.gpu_vendor().empty()) {
+          return WebGLAny(script_state,
+                          String::FromUtf8(policy.gpu_vendor()));
+        }
         return WebGLAny(script_state,
                         String(ContextGL()->GetString(GL_VENDOR)));
       }
