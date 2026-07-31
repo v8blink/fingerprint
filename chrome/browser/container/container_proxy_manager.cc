@@ -24,8 +24,6 @@ namespace tab_container {
 
 namespace {
 
-constexpr const char* kLogPrefix = "[ContainerProxyManager]";
-
 std::string ProxyStateToString(ContainerProxyState state) {
   switch (state) {
     case ContainerProxyState::kNoProxy:
@@ -48,28 +46,6 @@ std::string ProxyStateToString(ContainerProxyState state) {
       return "Disconnected";
     case ContainerProxyState::kReconfiguring:
       return "Reconfiguring";
-  }
-  return "Unknown";
-}
-
-std::string TraceEventToString(ProxyRequestTrace::TraceEvent event) {
-  switch (event) {
-    case ProxyRequestTrace::TraceEvent::kProxyResolution:
-      return "ProxyResolution";
-    case ProxyRequestTrace::TraceEvent::kProxyConnect:
-      return "ProxyConnect";
-    case ProxyRequestTrace::TraceEvent::kProxyAuth:
-      return "ProxyAuth";
-    case ProxyRequestTrace::TraceEvent::kProxyRetry:
-      return "ProxyRetry";
-    case ProxyRequestTrace::TraceEvent::kProxyFallback:
-      return "ProxyFallback";
-    case ProxyRequestTrace::TraceEvent::kDirectConnection:
-      return "DirectConnection";
-    case ProxyRequestTrace::TraceEvent::kRequestComplete:
-      return "RequestComplete";
-    case ProxyRequestTrace::TraceEvent::kRequestFailed:
-      return "RequestFailed";
   }
   return "Unknown";
 }
@@ -254,7 +230,6 @@ bool ContainerProxyManager::SetProxyConfig(const std::string& container_id,
   } else {
 
     ContainerProxyInfo* info = it->second.get();
-    const ContainerProxyState prev_state = info->state;
 
     if (debug_logging_enabled_) {
       ;

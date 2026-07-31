@@ -17,8 +17,6 @@ namespace tab_container {
 
 namespace {
 
-constexpr const char* kLogPrefix = "[ContainerMetricsManager]";
-
 std::string MetricTypeToString(MetricType type) {
   switch (type) {
     case MetricType::kContainerCreated: return "container_created";

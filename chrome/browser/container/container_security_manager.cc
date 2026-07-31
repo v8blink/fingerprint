@@ -15,27 +15,6 @@ namespace tab_container {
 
 namespace {
 
-constexpr const char* kLogPrefix = "[ContainerSecurityManager]";
-
-std::string SecurityEventTypeToString(SecurityEventType type) {
-  switch (type) {
-    case SecurityEventType::kThreatDetected: return "ThreatDetected";
-    case SecurityEventType::kThreatBlocked: return "ThreatBlocked";
-    case SecurityEventType::kPermissionDenied: return "PermissionDenied";
-    case SecurityEventType::kPermissionGranted: return "PermissionGranted";
-    case SecurityEventType::kCSPViolation: return "CSPViolation";
-    case SecurityEventType::kMixedContentBlocked: return "MixedContentBlocked";
-    case SecurityEventType::kCORSBlocked: return "CORSBlocked";
-    case SecurityEventType::kCertificateError: return "CertificateError";
-    case SecurityEventType::kSandboxViolation: return "SandboxViolation";
-    case SecurityEventType::kNavigationBlocked: return "NavigationBlocked";
-    case SecurityEventType::kDownloadBlocked: return "DownloadBlocked";
-    case SecurityEventType::kScriptBlocked: return "ScriptBlocked";
-    case SecurityEventType::kPopupBlocked: return "PopupBlocked";
-  }
-  return "Unknown";
-}
-
 std::string ThreatTypeToString(SecurityThreatType type) {
   switch (type) {
     case SecurityThreatType::kNone: return "None";

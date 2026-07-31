@@ -1103,8 +1103,6 @@ void CookiePortabilityService::ExportProfileToEncryptedFile(
           if (!write_ok) {
             ;
           } else {
-            const std::optional<int64_t> written_size =
-                base::GetFileSize(req.output_path);
             ;
           }
           if (!write_ok) {

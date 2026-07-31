@@ -9,7 +9,6 @@
 namespace tab_container {
 
 namespace {
-constexpr const char* kLogPrefix = "[ContainerPartitionTracker]";
 }  
 
 ContainerPartitionTracker* ContainerPartitionTracker::GetInstance() {

@@ -19,8 +19,6 @@ namespace tab_container {
 
 namespace {
 
-constexpr const char* kLogPrefix = "[ContainerDnsManager]";
-
 std::string DnsModeToString(ContainerDnsConfig::DnsMode mode) {
   switch (mode) {
     case ContainerDnsConfig::DnsMode::kSystem:

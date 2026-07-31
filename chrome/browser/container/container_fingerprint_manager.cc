@@ -24,8 +24,6 @@ namespace tab_container {
 
 namespace {
 
-constexpr const char* kLogPrefix = "[ContainerFingerprintManager]";
-
 const std::vector<std::string>& GetStandardFonts() {
   static const base::NoDestructor<std::vector<std::string>> kFonts(
       std::vector<std::string>{

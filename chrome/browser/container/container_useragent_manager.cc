@@ -18,8 +18,6 @@ namespace tab_container {
 
 namespace {
 
-constexpr const char* kLogPrefix = "[ContainerUserAgentManager]";
-
 std::string DeviceTypeToString(UADeviceType type) {
   switch (type) {
     case UADeviceType::kDesktop: return "Desktop";

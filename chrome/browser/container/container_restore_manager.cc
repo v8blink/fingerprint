@@ -23,8 +23,6 @@ namespace tab_container {
 
 namespace {
 
-constexpr const char* kLogPrefix = "[ContainerRestoreManager]";
-
 constexpr int kValidationTimeoutSeconds = 5;
 constexpr int kPartitionCreationTimeoutSeconds = 10;
 constexpr int kNetworkConfigTimeoutSeconds = 5;

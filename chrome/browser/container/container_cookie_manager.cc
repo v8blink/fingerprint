@@ -19,8 +19,6 @@ namespace tab_container {
 
 namespace {
 
-constexpr const char* kLogPrefix = "[ContainerCookieManager]";
-
 std::string IsolationModeToString(CookieIsolationMode mode) {
   switch (mode) {
     case CookieIsolationMode::kNone: return "None";
@@ -161,8 +159,6 @@ bool ContainerCookieManager::DestroyCookieJar(const std::string& container_id) {
   if (it == cookie_jars_.end()) {
     return false;
   }
-
-  size_t cookie_count = it->second->cookies.size();
 
   cookie_jars_.erase(it);
   cookie_events_.erase(container_id);

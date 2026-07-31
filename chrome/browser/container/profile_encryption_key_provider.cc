@@ -14,8 +14,6 @@ namespace tab_container {
 
 namespace {
 
-constexpr char kLogTag[] = "[ProfileEncryptionKey]";
-
 }  
 
 std::string GetOrCreateProfileEncryptionKey(Profile* profile) {

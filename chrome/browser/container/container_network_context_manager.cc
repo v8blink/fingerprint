@@ -22,8 +22,6 @@ namespace tab_container {
 
 namespace {
 
-constexpr const char* kLogPrefix = "[ContainerNetworkContextManager]";
-
 std::string NetworkContextStateToString(NetworkContextState state) {
   switch (state) {
     case NetworkContextState::kNotCreated:
@@ -42,28 +40,6 @@ std::string NetworkContextStateToString(NetworkContextState state) {
       return "Destroyed";
     case NetworkContextState::kError:
       return "Error";
-  }
-  return "Unknown";
-}
-
-std::string TraceTypeToString(NetworkRequestTrace::TraceType type) {
-  switch (type) {
-    case NetworkRequestTrace::TraceType::kNavigation:
-      return "Navigation";
-    case NetworkRequestTrace::TraceType::kSubresource:
-      return "Subresource";
-    case NetworkRequestTrace::TraceType::kRedirect:
-      return "Redirect";
-    case NetworkRequestTrace::TraceType::kServiceWorker:
-      return "ServiceWorker";
-    case NetworkRequestTrace::TraceType::kPrefetch:
-      return "Prefetch";
-    case NetworkRequestTrace::TraceType::kCached:
-      return "Cached";
-    case NetworkRequestTrace::TraceType::kWebSocket:
-      return "WebSocket";
-    case NetworkRequestTrace::TraceType::kFetch:
-      return "Fetch";
   }
   return "Unknown";
 }
@@ -340,7 +316,6 @@ bool ContainerNetworkContextManager::UpdateNetworkConfig(
 
   ContainerNetworkContextInfo* info = it->second.get();
 
-  const NetworkContextState prev_state = info->state;
   ;
 
   TransitionState(info, NetworkContextState::kReconfiguring);
@@ -773,8 +748,6 @@ void ContainerNetworkContextManager::ApplyProxyConfig(
 void ContainerNetworkContextManager::ApplyDnsConfig(
     ContainerNetworkContextInfo* info) {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
-
-  const auto& dns_config = info->config.dns_config;
 
   ;
 

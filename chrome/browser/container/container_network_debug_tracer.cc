@@ -18,8 +18,6 @@ namespace tab_container {
 
 namespace {
 
-constexpr const char* kLogPrefix = "[ContainerNetworkDebugTracer]";
-
 std::string EventTypeToString(NetworkDebugTraceEvent::EventType type) {
   switch (type) {
     case NetworkDebugTraceEvent::EventType::kTabCreated:

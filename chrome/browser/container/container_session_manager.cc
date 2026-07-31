@@ -22,8 +22,6 @@ namespace tab_container {
 
 namespace {
 
-constexpr const char* kLogPrefix = "[ContainerSessionManager]";
-
 std::string SessionStateToString(SessionState state) {
   switch (state) {
     case SessionState::kNotCreated: return "NotCreated";
