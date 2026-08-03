@@ -52,10 +52,12 @@ class PLATFORM_EXPORT ImageDataBuffer {
   static std::unique_ptr<ImageDataBuffer> Create(const SkPixmap&);
 
   String ToDataURL(const ImageEncodingMimeType mime_type,
-                   const double& quality) const;
+                   const double& quality,
+                   const String& device_model = String()) const;
   bool EncodeImage(const ImageEncodingMimeType mime_type,
                    const double& quality,
-                   Vector<unsigned char>* encoded_image) const;
+                   Vector<unsigned char>* encoded_image,
+                   const String& device_model = String()) const;
 
   base::span<const uint8_t> PixelData() const;
 

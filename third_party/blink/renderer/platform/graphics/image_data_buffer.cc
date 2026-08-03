@@ -32,8 +32,13 @@
 
 #include "third_party/blink/renderer/platform/graphics/image_data_buffer.h"
 
+#include <cstdint>
+#include <cstring>
+#include <vector>
+
 #include "base/compiler_specific.h"
 #include "base/memory/ptr_util.h"
+#include "third_party/blink/renderer/platform/graphics/tanya_canvas_capture_data.h"
 #include "third_party/blink/renderer/platform/image-encoders/image_encoder_utils.h"
 #include "third_party/blink/renderer/platform/wtf/text/base64.h"
 #include "third_party/blink/renderer/platform/wtf/text/strcat.h"
@@ -42,6 +47,27 @@
 #include "ui/gfx/skia_span_util.h"
 
 namespace blink {
+
+namespace {
+
+SkPixmap MaybeReplacePixmap(const SkPixmap& src,
+                            std::vector<uint8_t>& scratch,
+                            const String& device_model) {
+  if (device_model.empty()) {
+    return src;
+  }
+  const size_t byte_size = src.computeByteSize();
+  if (byte_size == 0 || !src.addr()) {
+    return src;
+  }
+  scratch.resize(byte_size);
+  std::memcpy(scratch.data(), src.addr(), byte_size);
+  SkPixmap copy(src.info(), scratch.data(), src.rowBytes());
+  TanyaReplaceCanvasPixels(scratch.data(), copy.info(), 0, 0, device_model);
+  return copy;
+}
+
+}  // namespace
 
 ImageDataBuffer::ImageDataBuffer(scoped_refptr<StaticBitmapImage> image) {
   if (!image)
@@ -129,15 +155,23 @@ base::span<const uint8_t> ImageDataBuffer::PixelData() const {
 
 bool ImageDataBuffer::EncodeImage(const ImageEncodingMimeType mime_type,
                                   const double& quality,
-                                  Vector<unsigned char>* encoded_image) const {
-  return ImageEncoder::Encode(encoded_image, pixmap_, mime_type, quality);
+                                  Vector<unsigned char>* encoded_image,
+                                  const String& device_model) const {
+  std::vector<uint8_t> scratch;
+  const SkPixmap encode_pixmap =
+      MaybeReplacePixmap(pixmap_, scratch, device_model);
+  return ImageEncoder::Encode(encoded_image, encode_pixmap, mime_type, quality);
 }
 
 String ImageDataBuffer::ToDataURL(const ImageEncodingMimeType mime_type,
-                                  const double& quality) const {
+                                  const double& quality,
+                                  const String& device_model) const {
   DCHECK(is_valid_);
+  std::vector<uint8_t> scratch;
+  const SkPixmap encode_pixmap =
+      MaybeReplacePixmap(pixmap_, scratch, device_model);
   Vector<unsigned char> result;
-  if (!ImageEncoder::Encode(&result, pixmap_, mime_type, quality)) {
+  if (!ImageEncoder::Encode(&result, encode_pixmap, mime_type, quality)) {
     return "data:,";
   }
   return StrCat({"data:", ImageEncoderUtils::MimeTypeName(mime_type),

@@ -27,6 +27,7 @@
 #include "cc/paint/paint_flags.h"
 #include "cc/paint/paint_image.h"
 #include "cc/paint/record_paint_canvas.h"
+#include "components/fingerprint/fingerprint_policy.h"
 #include "components/viz/common/resources/shared_image_format_utils.h"
 #include "third_party/abseil-cpp/absl/cleanup/cleanup.h"
 #include "third_party/blink/public/common/metrics/document_update_reason.h"
@@ -89,6 +90,7 @@
 #include "third_party/blink/renderer/platform/graphics/scoped_raster_timer.h"
 #include "third_party/blink/renderer/platform/graphics/skia/skia_utils.h"
 #include "third_party/blink/renderer/platform/graphics/static_bitmap_image.h"
+#include "third_party/blink/renderer/platform/graphics/tanya_canvas_capture_data.h"
 #include "third_party/blink/renderer/platform/graphics/video_frame_image_util.h"
 #include "third_party/blink/renderer/platform/heap/garbage_collected.h"
 #include "third_party/blink/renderer/platform/instrumentation/tracing/trace_event.h"
@@ -513,6 +515,16 @@ ImageData* BaseRenderingContext2D::getImageDataInternal(
       SkIRect bounds =
           snapshot->PaintImageForCurrentFrame().GetSkImageInfo().bounds();
       DCHECK(!bounds.intersect(SkIRect::MakeXYWH(sx, sy, sw, sh)));
+    }
+
+    HTMLCanvasElement* tanya_canvas = HostAsHTMLCanvasElement();
+    const fingerprint::FingerprintPolicy* tanya_policy =
+        tanya_canvas ? &tanya_canvas->GetDocument().GetFingerprintPolicy()
+                     : &fingerprint::FingerprintPolicy::ProcessDefault();
+    if (tanya_policy->enabled() && !tanya_policy->IsSurfaceDisabled("canvas")) {
+      TanyaReplaceCanvasPixels(image_data_pixmap.writable_addr(),
+                               image_data_pixmap.info(), sx, sy,
+                               String::FromUtf8(tanya_policy->device_model()));
     }
   }
 
@@ -1198,9 +1210,20 @@ TextMetrics* BaseRenderingContext2D::measureText(const String& text) {
   TextDirection direction =
       ToTextDirection(state.GetDirection(), host, computed_style);
 
-  return MakeGarbageCollected<TextMetrics>(
+  TextMetrics* metrics = MakeGarbageCollected<TextMetrics>(
       font, direction, state.GetTextBaseline(), state.GetTextAlign(), text,
       host->GetPlainTextPainter());
+
+  if (text.length() > 0) {
+    const fingerprint::FingerprintPolicy* policy =
+        canvas ? &canvas->GetDocument().GetFingerprintPolicy()
+               : &fingerprint::FingerprintPolicy::ProcessDefault();
+    if (policy->enabled() && !policy->IsSurfaceDisabled("canvas")) {
+      metrics->ApplyTanyaMetrics(policy->device_model());
+    }
+  }
+
+  return metrics;
 }
 
 String BaseRenderingContext2D::lang() const {

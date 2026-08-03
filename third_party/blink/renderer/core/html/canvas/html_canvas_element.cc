@@ -45,6 +45,7 @@
 #include "build/build_config.h"
 #include "cc/layers/texture_layer.h"
 #include "cc/trees/layer_tree_host.h"
+#include "components/fingerprint/fingerprint_policy.h"
 #include "services/metrics/public/cpp/ukm_recorder.h"
 #include "services/metrics/public/cpp/ukm_source_id.h"
 #include "third_party/blink/public/common/features.h"
@@ -1293,7 +1294,14 @@ String HTMLCanvasElement::ToDataURLInternal(
     if (!data_buffer)
       return String("data:,");
 
-    String data_url = data_buffer->ToDataURL(encoding_mime_type, quality);
+    String tanya_device_model;
+    const fingerprint::FingerprintPolicy& tanya_policy =
+        GetDocument().GetFingerprintPolicy();
+    if (tanya_policy.enabled() && !tanya_policy.IsSurfaceDisabled("canvas")) {
+      tanya_device_model = String::FromUtf8(tanya_policy.device_model());
+    }
+    String data_url =
+        data_buffer->ToDataURL(encoding_mime_type, quality, tanya_device_model);
     base::TimeDelta elapsed_time = base::TimeTicks::Now() - start_time;
     float sqrt_pixels =
         std::sqrt(image_bitmap->width()) * std::sqrt(image_bitmap->height());
