@@ -152,6 +152,8 @@ blink_modules_sources("webgl") {
     "webgl_renderbuffer.h",
     "webgl_rendering_context.cc",
     "webgl_rendering_context.h",
+    "tanya_webgl_capture_data.cc",
+    "tanya_webgl_capture_data.h",
     "webgl_rendering_context_base.cc",
     "webgl_rendering_context_base.h",
     "webgl_rendering_context_webgpu.cc",
