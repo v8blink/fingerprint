@@ -24,7 +24,11 @@
 
 #include "third_party/blink/renderer/core/css/css_computed_style_declaration.h"
 
+#include <array>
+
 #include "base/memory/values_equivalent.h"
+#include "base/strings/string_number_conversions.h"
+#include "components/fingerprint/fingerprint_policy.h"
 #include "third_party/blink/renderer/core/animation/css/css_animation_data.h"
 #include "third_party/blink/renderer/core/css/computed_style_css_value_mapping.h"
 #include "third_party/blink/renderer/core/css/css_identifier_value.h"
@@ -65,6 +69,88 @@ CSSValueID CssIdentifierForFontSizeKeyword(int keyword_size) {
   return static_cast<CSSValueID>(static_cast<int>(CSSValueID::kXxSmall) +
                                  keyword_size - 1);
 }
+
+bool ShouldApplyTanyaChrome149Keys() {
+  const auto& policy = fingerprint::FingerprintPolicy::ProcessDefault();
+  if (!policy.enabled() || !policy.stealth() ||
+      policy.brand_version().empty()) {
+    return false;
+  }
+  const std::string& bv = policy.brand_version();
+  const auto first_dot = bv.find('.');
+  const std::string major_str =
+      (first_dot == std::string::npos) ? bv : bv.substr(0, first_dot);
+  int major = 0;
+  if (!base::StringToInt(major_str, &major)) {
+    return false;
+  }
+  return major >= 149;
+}
+
+constexpr std::array<const char*, 62> kTanyaExtraComputedStyleKeys = {
+    "-webkit-mask-position-x",
+    "-webkit-mask-position-y",
+    "-webkit-ruby-position",
+    "animation-trigger",
+    "aspect-ratio",
+    "border-shape",
+    "color-scheme",
+    "column-fill",
+    "column-height",
+    "column-rule-break",
+    "column-rule-inset-cap-end",
+    "column-rule-inset-cap-start",
+    "column-rule-inset-junction-end",
+    "column-rule-inset-junction-start",
+    "column-rule-visibility-items",
+    "column-wrap",
+    "contain",
+    "content-visibility",
+    "counter-increment",
+    "counter-reset",
+    "counter-set",
+    "font-feature-settings",
+    "font-variation-settings",
+    "forced-color-adjust",
+    "overscroll-behavior-x",
+    "overscroll-behavior-y",
+    "quotes",
+    "row-rule-break",
+    "row-rule-color",
+    "row-rule-inset-cap-end",
+    "row-rule-inset-cap-start",
+    "row-rule-inset-junction-end",
+    "row-rule-inset-junction-start",
+    "row-rule-style",
+    "row-rule-visibility-items",
+    "row-rule-width",
+    "rule-overlap",
+    "scroll-margin-bottom",
+    "scroll-margin-left",
+    "scroll-margin-right",
+    "scroll-margin-top",
+    "scroll-padding-bottom",
+    "scroll-padding-left",
+    "scroll-padding-right",
+    "scroll-padding-top",
+    "scroll-snap-align",
+    "scroll-snap-stop",
+    "scroll-snap-type",
+    "text-combine-upright",
+    "text-decoration-thickness",
+    "text-justify",
+    "text-orientation",
+    "text-underline-offset",
+    "timeline-trigger-activation-range-end",
+    "timeline-trigger-activation-range-start",
+    "timeline-trigger-active-range-end",
+    "timeline-trigger-active-range-start",
+    "timeline-trigger-name",
+    "timeline-trigger-source",
+    "transform-box",
+    "trigger-scope",
+    "view-transition-scope",
+};
 
 void LogUnimplementedPropertyID(const CSSProperty& property) {
   if (!DCHECK_IS_ON() || !VLOG_IS_ON(1) ||
@@ -419,7 +505,10 @@ unsigned CSSComputedStyleDeclaration::length() const {
     variable_count = GetVariableNamesCount();
   }
 
-  return ComputableProperties(GetExecutionContext()).size() + variable_count;
+  const unsigned extras =
+      ShouldApplyTanyaChrome149Keys() ? kTanyaExtraComputedStyleKeys.size() : 0;
+  return ComputableProperties(GetExecutionContext()).size() + variable_count +
+         extras;
 }
 
 String CSSComputedStyleDeclaration::item(unsigned i) const {
@@ -433,12 +522,21 @@ String CSSComputedStyleDeclaration::item(unsigned i) const {
     return standard_names[i]->GetPropertyNameString();
   }
 
-  DCHECK(RuntimeEnabledFeatures::CSSEnumeratedCustomPropertiesEnabled());
-  DCHECK(GetVariableNames());
-  const auto& variable_names = *GetVariableNames();
-  CHECK_LT(i - standard_names.size(), variable_names.size());
+  const unsigned variable_base = standard_names.size();
+  wtf_size_t variable_count = 0;
+  if (RuntimeEnabledFeatures::CSSEnumeratedCustomPropertiesEnabled() &&
+      GetVariableNames()) {
+    variable_count = GetVariableNames()->size();
+  }
 
-  return variable_names[i - standard_names.size()];
+  if (i < variable_base + variable_count) {
+    DCHECK(RuntimeEnabledFeatures::CSSEnumeratedCustomPropertiesEnabled());
+    DCHECK(GetVariableNames());
+    return (*GetVariableNames())[i - variable_base];
+  }
+
+  return String::FromUtf8(
+      kTanyaExtraComputedStyleKeys[i - variable_base - variable_count]);
 }
 
 bool CSSComputedStyleDeclaration::CssPropertyMatches(
