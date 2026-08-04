@@ -28,6 +28,7 @@ include_rules = [
   "+components/dom_distiller/core",
   "+components/embedder_support/android/common",
   "+components/feed/feed_feature_list.h",
+  "+components/fingerprint",
   "+components/grit",
   "+components/guest_view/buildflags",
   "+components/guest_view/renderer",

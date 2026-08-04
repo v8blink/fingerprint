@@ -123,6 +123,7 @@ static_library("renderer") {
     "//chrome/common/request_header_integrity:buildflags",
     "//chrome/common/search:mojo_bindings",
     "//chrome/renderer/actor",
+    "//chrome/renderer/tanya_fingerprint",
     "//chrome/services/speech/buildflags",
     "//components/actor/core:task_id",
     "//components/autofill/content/renderer",
