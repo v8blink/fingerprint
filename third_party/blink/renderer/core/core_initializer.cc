@@ -30,6 +30,8 @@
 
 #include "third_party/blink/renderer/core/core_initializer.h"
 
+#include "base/i18n/rtl.h"
+#include "components/fingerprint/fingerprint_policy.h"
 #include "third_party/blink/public/platform/platform.h"
 #include "third_party/blink/public/web/blink.h"
 #include "third_party/blink/renderer/bindings/core/v8/binding_security.h"
@@ -73,8 +75,38 @@
 #include "third_party/blink/renderer/platform/weborigin/security_policy.h"
 #include "third_party/blink/renderer/platform/wtf/allocator/partitions.h"
 #include "third_party/blink/renderer/platform/wtf/text/atomic_string_table.h"
+#include "third_party/icu/source/common/unicode/locid.h"
+#include "third_party/icu/source/common/unicode/utypes.h"
 
 namespace blink {
+
+namespace {
+
+void ApplyFingerprintLocaleOverride() {
+  const std::string languages =
+      fingerprint::FingerprintPolicy::ProcessDefault().languages();
+  if (languages.empty()) {
+    return;
+  }
+  std::string primary = languages.substr(0, languages.find(','));
+  while (!primary.empty() && primary.front() == ' ') {
+    primary.erase(primary.begin());
+  }
+  while (!primary.empty() && primary.back() == ' ') {
+    primary.pop_back();
+  }
+  if (primary.empty()) {
+    return;
+  }
+  UErrorCode status = U_ZERO_ERROR;
+  const icu::Locale locale = icu::Locale::forLanguageTag(primary, status);
+  if (U_FAILURE(status) || locale.isBogus()) {
+    return;
+  }
+  base::i18n::SetICUDefaultLocale(primary);
+}
+
+}  // namespace
 
 CoreInitializer* CoreInitializer::instance_ = nullptr;
 
@@ -171,6 +203,8 @@ void CoreInitializer::Initialize() {
 
   BindingSecurity::Init();
   ScriptStateImpl::Init();
+
+  ApplyFingerprintLocaleOverride();
 
   TimeZoneController::Init();
 
