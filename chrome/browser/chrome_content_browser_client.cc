@@ -2949,6 +2949,7 @@ void ChromeContentBrowserClient::AppendExtraCommandLineSwitches(
       fingerprint::kFingerprintTimezone,
       fingerprint::kFingerprintLanguages,
       fingerprint::kFingerprintScreen,
+      fingerprint::kFingerprintWebrtcPublicIp,
   };
   command_line->CopySwitchesFrom(browser_command_line, kFingerprintSwitches);
 

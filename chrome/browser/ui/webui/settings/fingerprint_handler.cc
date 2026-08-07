@@ -72,6 +72,7 @@ void ApplyProfileToCommandLine(const base::DictValue& row, int index) {
   set(fingerprint::kFingerprintTimezone, "timezone");
   set(fingerprint::kFingerprintLanguages, "languages");
   set(fingerprint::kFingerprintScreen, "screen");
+  set(fingerprint::kFingerprintWebrtcPublicIp, "webrtc_public_ip");
 }
 
 bool BuildTanyaUaFromPolicy(const fingerprint::FingerprintPolicy& policy,
