@@ -4290,6 +4290,46 @@ ScriptValue WebGLRenderingContextBase::getParameter(ScriptState* script_state,
                                                     GLenum pname) {
   if (isContextLost())
     return ScriptValue::CreateNull(script_state->GetIsolate());
+
+  // Tanya810 Phase C: replay common integer params from
+  // surfaces.canvasWebgl.parameters (UNMASKED vendor/renderer handled below).
+  {
+    const fingerprint::FingerprintPolicy& tp =
+        fingerprint::FingerprintPolicy::ProcessDefault();
+    if (tp.SurfaceActive("canvasWebgl") && !tp.IsSurfaceDisabled("webgl")) {
+      const char* key = nullptr;
+      switch (pname) {
+        case GL_MAX_TEXTURE_SIZE: key = "MAX_TEXTURE_SIZE"; break;
+        case GL_MAX_CUBE_MAP_TEXTURE_SIZE:
+          key = "MAX_CUBE_MAP_TEXTURE_SIZE"; break;
+        case GL_MAX_RENDERBUFFER_SIZE: key = "MAX_RENDERBUFFER_SIZE"; break;
+        case GL_MAX_VERTEX_ATTRIBS: key = "MAX_VERTEX_ATTRIBS"; break;
+        case GL_MAX_VERTEX_UNIFORM_VECTORS:
+          key = "MAX_VERTEX_UNIFORM_VECTORS"; break;
+        case GL_MAX_VARYING_VECTORS: key = "MAX_VARYING_VECTORS"; break;
+        case GL_MAX_FRAGMENT_UNIFORM_VECTORS:
+          key = "MAX_FRAGMENT_UNIFORM_VECTORS"; break;
+        case GL_MAX_TEXTURE_IMAGE_UNITS: key = "MAX_TEXTURE_IMAGE_UNITS"; break;
+        case GL_MAX_VERTEX_TEXTURE_IMAGE_UNITS:
+          key = "MAX_VERTEX_TEXTURE_IMAGE_UNITS"; break;
+        case GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS:
+          key = "MAX_COMBINED_TEXTURE_IMAGE_UNITS"; break;
+        case GL_SUBPIXEL_BITS: key = "SUBPIXEL_BITS"; break;
+        default: break;
+      }
+      if (key) {
+        if (const base::DictValue* params =
+                tp.GetSurfaceDict("canvasWebgl", "parameters")) {
+          if (std::optional<int> iv = params->FindInt(key)) {
+            VLOG(1) << "Tanya810 [canvasWebgl] getParameter mode=INJECT key="
+                    << key;
+            return WebGLAny(script_state, static_cast<GLint>(*iv));
+          }
+        }
+      }
+    }
+  }
+
   const int kIntZero = 0;
   switch (pname) {
     case GL_ACTIVE_TEXTURE:
@@ -4852,6 +4892,26 @@ std::optional<Vector<String>>
 WebGLRenderingContextBase::getSupportedExtensions() {
   if (isContextLost())
     return std::nullopt;
+
+  const fingerprint::FingerprintPolicy& tp =
+      fingerprint::FingerprintPolicy::ProcessDefault();
+  if (tp.SurfaceActive("canvasWebgl") && !tp.IsSurfaceDisabled("webgl")) {
+    const char* tanya_ext_key =
+        IsWebGL2() ? "extensionsGl2" : "extensionsGl1";
+    if (const base::ListValue* ext =
+            tp.GetSurfaceList("canvasWebgl", tanya_ext_key)) {
+      Vector<String> injected;
+      for (const base::Value& e : *ext) {
+        if (const std::string* s = e.GetIfString()) {
+          injected.push_back(String::FromUtf8(*s));
+        }
+      }
+      VLOG(1) << "Tanya810 [canvasWebgl] getSupportedExtensions mode=INJECT key="
+              << tanya_ext_key << " n=" << injected.size();
+      return injected;
+    }
+  }
+  VLOG(1) << "Tanya810 [canvasWebgl] getSupportedExtensions mode=REAL_FALLBACK";
 
   Vector<String> result;
 
@@ -5687,7 +5747,7 @@ void WebGLRenderingContextBase::ReadPixelsHelper(GLint x,
   if (data && width > 0 && height > 0) {
     const fingerprint::FingerprintPolicy& policy =
         fingerprint::FingerprintPolicy::ProcessDefault();
-    if (policy.enabled() && !policy.device_model().empty() &&
+    if (policy.enabled() && policy.has_surface("canvasWebgl") &&
         !policy.IsSurfaceDisabled("webgl")) {
       const char* kind = IsWebGL2() ? "webgl2" : "webgl";
       if (TanyaReplaceWebGLPixels(kind, x, y, width, height,
@@ -5712,19 +5772,30 @@ bool TanyaReplaceWebGLPixels(const char* context_kind,
                              void* data,
                              size_t data_byte_size,
                              const std::string& device_model) {
-  if (device_model.empty()) {
+  // Tanya810 Phase C: read the per-tab WebGL pixel capture straight from the
+  // structured profile (surfaces.canvasWebgl.pixelsRaw / pixels2Raw) installed
+  // as the process default, instead of the compiled device_model table.
+  const fingerprint::FingerprintPolicy& policy =
+      fingerprint::FingerprintPolicy::ProcessDefault();
+  const char* key =
+      (context_kind && std::string(context_kind) == "webgl2") ? "pixels2Raw"
+                                                              : "pixelsRaw";
+  const base::ListValue* raw = policy.GetSurfaceList("canvasWebgl", key);
+  if (!raw || raw->empty()) {
+    VLOG(1) << "Tanya810 [replay] webgl readPixels mode=REAL_FALLBACK";
     return false;
   }
-  const TanyaWebGLCaptureEntry* entry = FindTanyaWebGLCapture(
-      device_model, context_kind, format, type, x, y, width, height,
-      canvas_width, canvas_height);
-  if (!entry || !entry->pixels || entry->pixels_size == 0) {
+  if (raw->size() > data_byte_size) {
+    VLOG(1) << "Tanya810 [replay] webgl readPixels mode=REAL_FALLBACK"
+            << " reason=size raw=" << raw->size() << " buf=" << data_byte_size;
     return false;
   }
-  if (entry->pixels_size > data_byte_size) {
-    return false;
+  uint8_t* out = static_cast<uint8_t*>(data);
+  const size_t n = raw->size();
+  for (size_t i = 0; i < n; ++i) {
+    out[i] = static_cast<uint8_t>((*raw)[i].GetIfInt().value_or(0) & 0xFF);
   }
-  memcpy(data, entry->pixels, entry->pixels_size);
+  VLOG(1) << "Tanya810 [replay] webgl readPixels mode=INJECT bytes=" << n;
   return true;
 }
 

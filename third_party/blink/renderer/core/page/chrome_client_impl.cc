@@ -1587,47 +1587,14 @@ void ChromeClientImpl::OnFirstContentfulPaint(const base::TimeDelta& duration) {
 
 const fingerprint::FingerprintPolicy& ChromeClientImpl::GetFingerprintPolicy()
     const {
+  // Tanya810 Phase A: the full structured fingerprint profile is parsed from
+  // the BigBuffer in WebViewImpl::UpdateTanyaFingerprintProfile and installed
+  // eagerly as the process default (SetProcessDefaultForRenderer). The 11 flat
+  // fingerprint_* RendererPreferences fields were removed, so Document
+  // consumers simply read the process default here.
   if (web_view_) {
-    const auto& prefs = web_view_->GetRendererPreferences();
-    if (prefs.fingerprint_enabled) {
-      if (!fingerprint_policy_cache_ ||
-          fingerprint_policy_cache_->platform() != prefs.fingerprint_platform ||
-          fingerprint_policy_cache_->platform_version() !=
-              prefs.fingerprint_platform_version ||
-          fingerprint_policy_cache_->brand() != prefs.fingerprint_brand ||
-          fingerprint_policy_cache_->brand_version() !=
-              prefs.fingerprint_brand_version ||
-          fingerprint_policy_cache_->gpu_vendor() !=
-              prefs.fingerprint_gpu_vendor ||
-          fingerprint_policy_cache_->gpu_renderer() !=
-              prefs.fingerprint_gpu_renderer ||
-          fingerprint_policy_cache_->hardware_concurrency() !=
-              prefs.fingerprint_hardware_concurrency ||
-          fingerprint_policy_cache_->device_memory() !=
-              prefs.fingerprint_device_memory ||
-          fingerprint_policy_cache_->timezone() != prefs.fingerprint_timezone ||
-          fingerprint_policy_cache_->languages() !=
-              prefs.fingerprint_languages ||
-          fingerprint_policy_cache_->screen() != prefs.fingerprint_screen) {
-        auto policy = std::make_unique<fingerprint::FingerprintPolicy>();
-        policy->set_enabled(true);
-        policy->set_platform(prefs.fingerprint_platform);
-        policy->set_platform_version(prefs.fingerprint_platform_version);
-        policy->set_brand(prefs.fingerprint_brand);
-        policy->set_brand_version(prefs.fingerprint_brand_version);
-        policy->set_gpu_vendor(prefs.fingerprint_gpu_vendor);
-        policy->set_gpu_renderer(prefs.fingerprint_gpu_renderer);
-        policy->set_hardware_concurrency(
-            prefs.fingerprint_hardware_concurrency);
-        policy->set_device_memory(prefs.fingerprint_device_memory);
-        policy->set_timezone(prefs.fingerprint_timezone);
-        policy->set_languages(prefs.fingerprint_languages);
-        policy->set_screen(prefs.fingerprint_screen);
-        fingerprint::FingerprintPolicy::SetProcessDefaultForRenderer(*policy);
-        fingerprint_policy_cache_ = std::move(policy);
-      }
-      return *fingerprint_policy_cache_;
-    }
+    VLOG(1) << "Tanya810 [policy] GetFingerprintPolicy enabled="
+            << web_view_->GetRendererPreferences().fingerprint_enabled;
   }
   return fingerprint::FingerprintPolicy::ProcessDefault();
 }

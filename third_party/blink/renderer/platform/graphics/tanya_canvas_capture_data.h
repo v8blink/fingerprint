@@ -11,7 +11,7 @@ PLATFORM_EXPORT void TanyaReplaceCanvasPixels(void* pixels,
                                               const SkImageInfo& info,
                                               int x_offset,
                                               int y_offset,
-                                              const String& device_model);
+                                              const String& key);
 
 }  // namespace blink
 

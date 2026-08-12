@@ -54,6 +54,9 @@
 #include "content/browser/renderer_host/render_frame_proxy_host.h"
 #include "content/browser/renderer_host/render_process_host_impl.h"
 #include "content/browser/renderer_host/render_view_host_delegate.h"
+#include "base/containers/span.h"
+#include "base/logging.h"
+#include "mojo/public/cpp/base/big_buffer.h"
 #include "content/browser/renderer_host/render_view_host_delegate_view.h"
 #include "content/browser/renderer_host/render_widget_host_delegate.h"
 #include "content/browser/renderer_host/render_widget_host_view_base.h"
@@ -606,6 +609,8 @@ bool RenderViewHostImpl::CreateRenderView(
   // the `page_broadcast_` channel.
   GetAgentSchedulingGroup().CreateView(std::move(params));
 
+  SendRendererPreferencesToRenderer(delegate_->GetRendererPrefs(this));
+
   // Set the bit saying we've made the `blink::WebView` in the renderer and
   // notify content public observers.
   RenderViewCreated(main_rfh);
@@ -907,6 +912,18 @@ void RenderViewHostImpl::SendRendererPreferencesToRenderer(
     if (!will_send_renderer_preferences_callback_for_testing_.is_null())
       will_send_renderer_preferences_callback_for_testing_.Run(preferences);
     broadcast->UpdateRendererPreferences(preferences);
+
+    // Tanya810 Phase A: deliver this tab's full structured fingerprint profile
+    // out-of-band as a BigBuffer (transparently shared memory > 64KB). It rides
+    // the same per-view PageBroadcast channel as renderer preferences, so it is
+    // re-delivered automatically when the renderer/view is rebuilt.
+    std::string profile_json =
+        delegate_ ? delegate_->GetTanyaFingerprintProfileJson() : std::string();
+    if (!profile_json.empty()) {
+      base::span<const uint8_t> bytes = base::as_byte_span(profile_json);
+      VLOG(1) << "Tanya810 [ipc-B] push bytes=" << bytes.size();
+      broadcast->UpdateTanyaFingerprintProfile(mojo_base::BigBuffer(bytes));
+    }
   }
 }
 

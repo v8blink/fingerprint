@@ -116,6 +116,8 @@ class MODULES_EXPORT AudioBuffer final : public ScriptWrappable {
 
   std::unique_ptr<SharedAudioBuffer> CreateSharedAudioBuffer();
 
+  void MaybeInjectTanyaBins();
+
  private:
   bool CreatedSuccessfully(unsigned desired_number_of_channels) const;
 

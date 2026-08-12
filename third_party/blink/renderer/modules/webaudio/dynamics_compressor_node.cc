@@ -25,6 +25,8 @@
 
 #include "third_party/blink/renderer/modules/webaudio/dynamics_compressor_node.h"
 
+#include "base/logging.h"
+#include "components/fingerprint/fingerprint_policy.h"
 #include "third_party/blink/renderer/bindings/modules/v8/v8_automation_rate.h"
 #include "third_party/blink/renderer/bindings/modules/v8/v8_dynamics_compressor_options.h"
 #include "third_party/blink/renderer/modules/webaudio/audio_graph_tracer.h"
@@ -171,6 +173,15 @@ AudioParam* DynamicsCompressorNode::ratio() const {
 }
 
 float DynamicsCompressorNode::reduction() const {
+  const auto& tp = fingerprint::FingerprintPolicy::ProcessDefault();
+  if (tp.SurfaceActive("offlineAudioContext")) {
+    if (auto v =
+            tp.GetSurfaceDouble("offlineAudioContext", "compressorGainReduction")) {
+      VLOG(1) << "Tanya810 [offlineAudioContext] reduction mode=INJECT val=" << *v;
+      return static_cast<float>(*v);
+    }
+    VLOG(1) << "Tanya810 [offlineAudioContext] reduction mode=REAL_FALLBACK";
+  }
   return GetDynamicsCompressorHandler().ReductionValue();
 }
 

@@ -10,6 +10,7 @@
 #include "base/files/file_util.h"
 #include "base/functional/bind.h"
 #include "base/json/json_reader.h"
+#include "base/json/json_writer.h"
 #include "base/logging.h"
 #include "base/path_service.h"
 #include "base/strings/strcat.h"
@@ -47,8 +48,11 @@ std::string ReadFingerprintJsonOnBlockingThread() {
   base::FilePath path = dir.AppendASCII("fingerprint.json");
   std::string contents;
   if (!base::ReadFileToString(path, &contents)) {
+    VLOG(1) << "Tanya810 [handler] load_read failed path="
+            << path.AsUTF8Unsafe();
     return std::string();
   }
+  VLOG(1) << "Tanya810 [handler] load_read bytes=" << contents.size();
   return contents;
 }
 
@@ -58,8 +62,16 @@ void ApplyProfileToCommandLine(const base::DictValue& row, int index) {
                          base::NumberToString(index + 1));
   const auto set = [&](const char* sw, const char* key) {
     const std::string* value = row.FindString(key);
-    cmd->AppendSwitchASCII(sw, value ? *value : std::string());
+    const std::string v = value ? *value : std::string();
+    cmd->AppendSwitchASCII(sw, v);
+    VLOG(1) << "Tanya810 [cmdline] set " << sw << "=" << v;
   };
+  // Phase A: only the 11 "early identity scalars" stay on the command line.
+  // They are consumed via ProcessDefault() before/without the mojo profile:
+  // at renderer init (languages/timezone) and in worker/service-worker
+  // processes that have no RenderView (and thus never receive the BigBuffer
+  // profile). screen and webrtc_public_ip now travel inside the structured
+  // profile instead of the command line.
   set(fingerprint::kFingerprintPlatform, "platform");
   set(fingerprint::kFingerprintPlatformVersion, "platform_version");
   set(fingerprint::kFingerprintBrand, "brand");
@@ -71,13 +83,14 @@ void ApplyProfileToCommandLine(const base::DictValue& row, int index) {
   set(fingerprint::kFingerprintDeviceMemory, "device_memory");
   set(fingerprint::kFingerprintTimezone, "timezone");
   set(fingerprint::kFingerprintLanguages, "languages");
-  set(fingerprint::kFingerprintScreen, "screen");
-  set(fingerprint::kFingerprintWebrtcPublicIp, "webrtc_public_ip");
+  VLOG(1) << "Tanya810 [cmdline] applied index=" << (index + 1)
+          << " scalars=11";
 }
 
 bool BuildTanyaUaFromPolicy(const fingerprint::FingerprintPolicy& policy,
                             std::string* out_ua,
-                            blink::UserAgentMetadata* out_meta) {
+                            blink::UserAgentMetadata* out_meta,
+                            const std::string& full_version_override) {
   std::string platform = base::ToLowerASCII(policy.platform());
   if (platform == "mac") {
     platform = "macos";
@@ -156,6 +169,8 @@ bool BuildTanyaUaFromPolicy(const fingerprint::FingerprintPolicy& policy,
   if (brand_version.empty()) {
     brand_version = std::string(version_info::GetVersionNumber());
   }
+  std::string full_version =
+      full_version_override.empty() ? brand_version : full_version_override;
   std::string major_version = brand_version;
   if (auto dot = major_version.find('.'); dot != std::string::npos) {
     major_version.resize(dot);
@@ -237,15 +252,15 @@ bool BuildTanyaUaFromPolicy(const fingerprint::FingerprintPolicy& policy,
   {
     blink::UserAgentBrandVersion pre[3] = {
         {greasy_brand, greasy_full},
-        {"Chromium", brand_version},
-        {brand_name, brand_version},
+        {"Chromium", full_version},
+        {brand_name, full_version},
     };
     meta.brand_full_version_list.resize(3);
     for (size_t i = 0; i < 3; ++i) {
       meta.brand_full_version_list[order[i]] = pre[i];
     }
   }
-  meta.full_version = brand_version;
+  meta.full_version = full_version;
   meta.platform = uad_platform;
   meta.platform_version = uad_platform_version;
   meta.architecture = is_mobile ? "" : ua_arch;
@@ -286,6 +301,7 @@ void FingerprintHandler::RegisterMessages() {
 
 void FingerprintHandler::HandleInitialize(const base::ListValue& args) {
   AllowJavascript();
+  VLOG(1) << "Tanya810 [handler] load_begin path=DIR_EXE/fingerprint.json";
   base::ThreadPool::PostTaskAndReplyWithResult(
       FROM_HERE, {base::MayBlock()},
       base::BindOnce(&ReadFingerprintJsonOnBlockingThread),
@@ -318,6 +334,7 @@ void FingerprintHandler::OnJsonLoaded(std::string contents) {
       ++index;
     }
   }
+  VLOG(1) << "Tanya810 [handler] json_parsed profiles=" << profiles_.size();
   FireWebUIListener("fingerprint-rows-changed", rows);
 }
 
@@ -349,17 +366,16 @@ void FingerprintHandler::HandleOpenFingerprintTab(
       return v ? *v : std::string();
     };
     prefs->fingerprint_enabled = true;
-    prefs->fingerprint_platform = get("platform");
-    prefs->fingerprint_platform_version = get("platform_version");
-    prefs->fingerprint_brand = get("brand");
-    prefs->fingerprint_brand_version = get("brand_version");
-    prefs->fingerprint_gpu_vendor = get("gpu_vendor");
-    prefs->fingerprint_gpu_renderer = get("gpu_renderer");
-    prefs->fingerprint_hardware_concurrency = get("hardware_concurrency");
-    prefs->fingerprint_device_memory = get("device_memory");
-    prefs->fingerprint_timezone = get("timezone");
-    prefs->fingerprint_languages = get("languages");
-    prefs->fingerprint_screen = get("screen");
+    // Tanya810 Phase A: the 11 flat fingerprint_* RendererPreferences fields
+    // were removed. The full structured profile now travels to the renderer as
+    // a BigBuffer (RenderViewHostImpl::SendRendererPreferencesToRenderer reads
+    // it back from the WebContents). Identity scalars still ride the command
+    // line for early/worker consumers.
+    std::string profile_json;
+    base::JSONWriter::Write(*row, &profile_json);
+    new_contents->SetTanyaFingerprintProfileJson(profile_json);
+    VLOG(1) << "Tanya810 [handler] open_tab index=" << index
+            << " profile_bytes=" << profile_json.size();
     new_contents->SyncRendererPrefs();
 
     fingerprint::FingerprintPolicy ua_policy;
@@ -369,9 +385,20 @@ void FingerprintHandler::HandleOpenFingerprintTab(
     ua_policy.set_brand_version(get("brand_version"));
     ua_policy.set_gpu_renderer(get("gpu_renderer"));
     ua_policy.set_device_model(get("device_model"));
+    std::string real_full_version;
+    if (const base::DictValue* surfaces = row->FindDict("surfaces")) {
+      if (const base::DictValue* nav = surfaces->FindDict("navigator")) {
+        if (const base::DictValue* uad = nav->FindDict("userAgentData")) {
+          if (const std::string* fv = uad->FindString("uaFullVersion")) {
+            real_full_version = *fv;
+          }
+        }
+      }
+    }
     std::string ua_str;
     blink::UserAgentMetadata ua_meta;
-    if (BuildTanyaUaFromPolicy(ua_policy, &ua_str, &ua_meta) &&
+    if (BuildTanyaUaFromPolicy(ua_policy, &ua_str, &ua_meta,
+                               real_full_version) &&
         !ua_str.empty()) {
       blink::UserAgentOverride ua_override;
       ua_override.ua_string_override = ua_str;

@@ -25,6 +25,11 @@
 
 #include "third_party/blink/renderer/modules/speech/speech_synthesis.h"
 
+#include "base/logging.h"
+#include "base/values.h"
+#include "components/fingerprint/fingerprint_policy.h"
+#include "third_party/blink/renderer/platform/wtf/text/wtf_string.h"
+
 #include <tuple>
 
 #include "build/build_config.h"
@@ -93,8 +98,49 @@ void SpeechSynthesis::OnSetVoiceList(
 }
 
 const HeapVector<Member<SpeechSynthesisVoice>>& SpeechSynthesis::getVoices() {
+  // Tanya810 Phase C: surfaces.voices has -> inject a synthetic voice list built
+  // from the profile (local + remote names, default flag). Reuses voice_list_.
+  const auto& tp = fingerprint::FingerprintPolicy::ProcessDefault();
+  if (tp.SurfaceActive("voices")) {
+    const base::ListValue* local = tp.GetSurfaceList("voices", "local");
+    const base::ListValue* remote = tp.GetSurfaceList("voices", "remote");
+    if (local || remote) {
+      std::optional<std::string> def_name =
+          tp.GetSurfaceString("voices", "defaultVoiceName");
+      std::optional<std::string> def_lang =
+          tp.GetSurfaceString("voices", "defaultVoiceLang");
+      voice_list_.clear();
+      const auto add = [&](const base::ListValue* names, bool is_local) {
+        if (!names) {
+          return;
+        }
+        for (const base::Value& n : *names) {
+          const std::string* nm = n.GetIfString();
+          if (!nm) {
+            continue;
+          }
+          auto v = mojom::blink::SpeechSynthesisVoice::New();
+          v->name = String::FromUtf8(*nm);
+          v->voice_uri = v->name;
+          const bool is_def = def_name && *nm == *def_name;
+          v->lang = (is_def && def_lang) ? String::FromUtf8(*def_lang)
+                                         : g_empty_string;
+          v->is_local_service = is_local;
+          v->is_default = is_def;
+          voice_list_.push_back(
+              MakeGarbageCollected<SpeechSynthesisVoice>(std::move(v)));
+        }
+      };
+      add(local, /*is_local=*/true);
+      add(remote, /*is_local=*/false);
+      VLOG(1) << "Tanya810 [voices] getVoices mode=INJECT count="
+              << voice_list_.size();
+      return voice_list_;
+    }
+  }
   // Kick off initialization here to ensure voice list gets populated.
   std::ignore = TryEnsureMojomSynthesis();
+  VLOG(1) << "Tanya810 [voices] getVoices mode=REAL_FALLBACK";
   return voice_list_;
 }
 

@@ -25,6 +25,10 @@
 
 #include "third_party/blink/renderer/modules/webaudio/analyser_node.h"
 
+#include "base/logging.h"
+#include "base/values.h"
+#include "components/fingerprint/fingerprint_policy.h"
+
 #include "third_party/blink/renderer/bindings/modules/v8/v8_analyser_options.h"
 #include "third_party/blink/renderer/modules/webaudio/analyser_handler.h"
 #include "third_party/blink/renderer/modules/webaudio/audio_graph_tracer.h"
@@ -119,15 +123,91 @@ double AnalyserNode::smoothingTimeConstant() const {
 void AnalyserNode::getFloatFrequencyData(NotShared<DOMFloat32Array> array) {
   GetAnalyserHandler().GetFloatFrequencyData(array.Get(),
                                              context()->currentTime());
+  // Tanya810 Phase C: replay surfaces.offlineAudioContext.floatFrequencyData.
+  const auto& tp = fingerprint::FingerprintPolicy::ProcessDefault();
+  if (tp.SurfaceActive("offlineAudioContext")) {
+    DOMFloat32Array* a = array.Get();
+    const base::ListValue* d =
+        tp.GetSurfaceList("offlineAudioContext", "floatFrequencyDataFull");
+    if (a && d && d->size() == a->length()) {
+      const float* real = a->Data();
+      bool non_uniform = false;
+      for (size_t i = 1; i < a->length(); ++i) {
+        if (real[i] != real[0]) {
+          non_uniform = true;
+          break;
+        }
+      }
+      if (!non_uniform) {
+        VLOG(1) << "Tanya810 [offlineAudioContext] getFloatFrequencyData"
+                << " mode=SKIP_SILENCE";
+      } else {
+        float* out = a->Data();
+        for (size_t i = 0; i < d->size(); ++i) {
+          out[i] = static_cast<float>((*d)[i].GetIfDouble().value_or(0));
+        }
+        VLOG(1) << "Tanya810 [offlineAudioContext] getFloatFrequencyData"
+                << " mode=INJECT n=" << d->size();
+      }
+    } else {
+      VLOG(1) << "Tanya810 [offlineAudioContext] getFloatFrequencyData"
+              << " mode=REAL_FALLBACK";
+    }
+  }
 }
 
 void AnalyserNode::getByteFrequencyData(NotShared<DOMUint8Array> array) {
   GetAnalyserHandler().GetByteFrequencyData(array.Get(),
                                             context()->currentTime());
+  // Tanya810 Phase C: replay surfaces.offlineAudioContext.byteFrequencyData.
+  const auto& tp = fingerprint::FingerprintPolicy::ProcessDefault();
+  if (tp.SurfaceActive("offlineAudioContext")) {
+    DOMUint8Array* a = array.Get();
+    const base::ListValue* d =
+        tp.GetSurfaceList("offlineAudioContext", "byteFrequencyData");
+    if (a && d && d->size() == a->length()) {
+      uint8_t* out = a->Data();
+      for (size_t i = 0; i < d->size(); ++i) {
+        out[i] = static_cast<uint8_t>((*d)[i].GetIfInt().value_or(0) & 0xFF);
+      }
+      VLOG(1) << "Tanya810 [offlineAudioContext] getByteFrequencyData"
+              << " mode=INJECT n=" << d->size();
+    }
+  }
+  return;
 }
 
 void AnalyserNode::getFloatTimeDomainData(NotShared<DOMFloat32Array> array) {
   GetAnalyserHandler().GetFloatTimeDomainData(array.Get());
+  const auto& tp = fingerprint::FingerprintPolicy::ProcessDefault();
+  if (tp.SurfaceActive("offlineAudioContext")) {
+    DOMFloat32Array* a = array.Get();
+    const base::ListValue* d =
+        tp.GetSurfaceList("offlineAudioContext", "floatTimeDomainDataFull");
+    if (a && d && d->size() == a->length()) {
+      const float* real = a->Data();
+      bool non_uniform = false;
+      for (size_t i = 1; i < a->length(); ++i) {
+        if (real[i] != real[0]) {
+          non_uniform = true;
+          break;
+        }
+      }
+      if (!non_uniform) {
+        VLOG(1) << "Tanya810 [offlineAudioContext] getFloatTimeDomainData"
+                << " mode=SKIP_SILENCE";
+      } else {
+        float* out = a->Data();
+        for (size_t i = 0; i < d->size(); ++i)
+          out[i] = static_cast<float>((*d)[i].GetIfDouble().value_or(0));
+        VLOG(1) << "Tanya810 [offlineAudioContext] getFloatTimeDomainData"
+                << " mode=INJECT n=" << d->size();
+      }
+    } else {
+      VLOG(1) << "Tanya810 [offlineAudioContext] getFloatTimeDomainData"
+              << " mode=REAL_FALLBACK";
+    }
+  }
 }
 
 void AnalyserNode::getByteTimeDomainData(NotShared<DOMUint8Array> array) {

@@ -7156,6 +7156,15 @@ blink::RendererPreferences* WebContentsImpl::GetMutableRendererPrefs() {
   return &renderer_preferences_;
 }
 
+void WebContentsImpl::SetTanyaFingerprintProfileJson(std::string json) {
+  VLOG(1) << "Tanya810 [webcontents] set_profile bytes=" << json.size();
+  tanya_fingerprint_profile_json_ = std::move(json);
+}
+
+std::string WebContentsImpl::GetTanyaFingerprintProfileJson() {
+  return tanya_fingerprint_profile_json_;
+}
+
 void WebContentsImpl::DragSourceEndedAt(float client_x,
                                         float client_y,
                                         float screen_x,

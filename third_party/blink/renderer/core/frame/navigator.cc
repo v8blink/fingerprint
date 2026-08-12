@@ -46,6 +46,13 @@ String Navigator::productSub() const {
 }
 
 String Navigator::vendor() const {
+  // Tanya810 Phase C: surfaces.navigator.vendor "has -> inject, absent -> real".
+  const auto& p = fingerprint::FingerprintPolicy::ProcessDefault();
+  if (std::optional<std::string> v = p.GetSurfaceString("navigator", "vendor")) {
+    VLOG(1) << "Tanya810 [navigator] vendor mode=INJECT val=" << *v;
+    return String::FromUtf8(*v);
+  }
+  VLOG(1) << "Tanya810 [navigator] vendor mode=REAL_FALLBACK";
   // Do not change without good cause. History:
   // https://code.google.com/p/chromium/issues/detail?id=276813
   // https://www.w3.org/Bugs/Public/show_bug.cgi?id=27786

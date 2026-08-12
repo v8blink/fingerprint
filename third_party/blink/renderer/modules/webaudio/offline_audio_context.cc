@@ -35,6 +35,7 @@
 #include "third_party/blink/renderer/core/dom/dom_exception.h"
 #include "third_party/blink/renderer/core/execution_context/execution_context.h"
 #include "third_party/blink/renderer/core/frame/local_dom_window.h"
+#include "third_party/blink/renderer/modules/webaudio/audio_buffer.h"
 #include "third_party/blink/renderer/modules/webaudio/audio_listener.h"
 #include "third_party/blink/renderer/modules/webaudio/deferred_task_handler.h"
 #include "third_party/blink/renderer/modules/webaudio/offline_audio_completion_event.h"
@@ -431,6 +432,8 @@ void OfflineAudioContext::FireCompletionEvent() {
     if (!rendered_buffer) {
       return;
     }
+
+    rendered_buffer->MaybeInjectTanyaBins();
 
     // Call the offline rendering completion event listener and resolve the
     // promise too.

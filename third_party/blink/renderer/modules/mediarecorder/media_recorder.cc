@@ -4,6 +4,10 @@
 
 #include "third_party/blink/renderer/modules/mediarecorder/media_recorder.h"
 
+#include "base/logging.h"
+#include "base/values.h"
+#include "components/fingerprint/fingerprint_policy.h"
+
 #include <algorithm>
 #include <limits>
 
@@ -389,6 +393,28 @@ void MediaRecorder::requestData(ExceptionState& exception_state) {
 
 bool MediaRecorder::isTypeSupported(ExecutionContext* context,
                                     const String& type) {
+  // Tanya810 Phase C: replay surfaces.media.mimeTypes[type].mediaRecorder.
+  const auto& tp = fingerprint::FingerprintPolicy::ProcessDefault();
+  if (tp.SurfaceActive("media")) {
+    if (const base::ListValue* list =
+            tp.GetSurfaceList("media", "mimeTypes")) {
+      const std::string mt = type.Utf8();
+      for (const base::Value& e : *list) {
+        const base::DictValue* d = e.GetIfDict();
+        if (!d) {
+          continue;
+        }
+        const std::string* m = d->FindString("mimeType");
+        if (!m || *m != mt) {
+          continue;
+        }
+        const bool r = d->FindBool("mediaRecorder").value_or(false);
+        VLOG(1) << "Tanya810 [media] MediaRecorder.isTypeSupported mode=INJECT"
+                << " mt=" << mt << " r=" << r;
+        return r;
+      }
+    }
+  }
   MediaRecorderHandler* handler = MakeGarbageCollected<MediaRecorderHandler>(
       context->GetTaskRunner(TaskType::kInternalMediaRealTime),
       KeyFrameRequestProcessor::Configuration());

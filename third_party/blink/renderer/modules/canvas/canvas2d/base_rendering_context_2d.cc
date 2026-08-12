@@ -104,6 +104,7 @@
 #include "third_party/blink/renderer/platform/wtf/casting.h"
 #include "third_party/blink/renderer/platform/wtf/forward.h"
 #include "third_party/blink/renderer/platform/wtf/math_extras.h"
+#include "third_party/blink/renderer/platform/wtf/text/string_builder.h"
 #include "third_party/blink/renderer/platform/wtf/text/wtf_string.h"
 #include "ui/gfx/geometry/skia_conversions.h"
 #include "ui/gfx/geometry/vector2d_f.h"
@@ -521,10 +522,19 @@ ImageData* BaseRenderingContext2D::getImageDataInternal(
     const fingerprint::FingerprintPolicy* tanya_policy =
         tanya_canvas ? &tanya_canvas->GetDocument().GetFingerprintPolicy()
                      : &fingerprint::FingerprintPolicy::ProcessDefault();
-    if (tanya_policy->enabled() && !tanya_policy->IsSurfaceDisabled("canvas")) {
+    if (tanya_policy->enabled() && tanya_policy->SurfaceActive("canvas2d")) {
+      const bool wrf = CreationAttributes().will_read_frequently ==
+          CanvasContextCreationAttributesCore::WillReadFrequently::kTrue;
+      StringBuilder kb;
+      kb.AppendNumber(snapshot->Size().width());
+      kb.Append('_');
+      kb.AppendNumber(snapshot->Size().height());
+      kb.Append('_');
+      kb.Append(wrf ? '1' : '0');
+      kb.Append('_');
+      kb.Append(tanya_drawn_text_);
       TanyaReplaceCanvasPixels(image_data_pixmap.writable_addr(),
-                               image_data_pixmap.info(), sx, sy,
-                               String::FromUtf8(tanya_policy->device_model()));
+                               image_data_pixmap.info(), sx, sy, kb.ToString());
     }
   }
 
@@ -1022,6 +1032,9 @@ void BaseRenderingContext2D::DrawTextInternal(
     unsigned run_end,
     double* max_width,
     const Font* cluster_font) {
+  if (!tanya_drawn_text_.ends_with(text)) {
+    tanya_drawn_text_ = tanya_drawn_text_ + text;
+  }
   HTMLCanvasElement* canvas = HostAsHTMLCanvasElement();
   if (canvas) {
     // The style resolution required for fonts is not available in frame-less

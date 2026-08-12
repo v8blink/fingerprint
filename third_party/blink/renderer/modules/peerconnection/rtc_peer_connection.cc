@@ -132,6 +132,9 @@
 #include "third_party/blink/renderer/platform/instrumentation/use_counter.h"
 #include "third_party/blink/renderer/platform/peerconnection/rtc_answer_options_platform.h"
 #include "third_party/blink/renderer/platform/peerconnection/rtc_ice_candidate_platform.h"
+#include "base/logging.h"
+#include "components/fingerprint/fingerprint_policy.h"
+#include "third_party/blink/renderer/platform/wtf/text/string_builder.h"
 #include "third_party/blink/renderer/platform/peerconnection/rtc_offer_options_platform.h"
 #include "third_party/blink/renderer/platform/peerconnection/rtc_session_description_platform.h"
 #include "third_party/blink/renderer/platform/peerconnection/rtc_stats.h"
@@ -2563,11 +2566,50 @@ void RTCPeerConnection::NegotiationNeeded() {
   MaybeDispatchEvent(Event::Create(event_type_names::kNegotiationneeded));
 }
 
+namespace {
+
+// Tanya810 Phase A: "has -> inject user value, absent -> real value".
+// When webrtc_public_ip is present in the profile, rewrite the
+// connection-address token of the locally generated ICE candidate; otherwise
+// return the candidate untouched.
+RTCIceCandidatePlatform* TanyaMaybeOverrideCandidateIp(
+    RTCIceCandidatePlatform* candidate) {
+  const fingerprint::FingerprintPolicy& policy =
+      fingerprint::FingerprintPolicy::ProcessDefault();
+  const std::string& ip = policy.webrtc_public_ip();
+  if (!policy.enabled() || ip.empty() || policy.IsSurfaceDisabled("webrtc") ||
+      candidate->Candidate().empty()) {
+    VLOG(1) << "Tanya810 [webrtc] candidate mode=REAL_FALLBACK";
+    return candidate;
+  }
+  Vector<String> tokens = candidate->Candidate().Split(' ');
+  // candidate:<foundation> <component> <transport> <priority> <address> ...
+  if (tokens.size() < 6) {
+    VLOG(1) << "Tanya810 [webrtc] candidate mode=REAL_FALLBACK reason=format";
+    return candidate;
+  }
+  tokens[4] = String::FromUtf8(ip);
+  StringBuilder rewritten;
+  for (wtf_size_t i = 0; i < tokens.size(); ++i) {
+    if (i) {
+      rewritten.Append(' ');
+    }
+    rewritten.Append(tokens[i]);
+  }
+  VLOG(1) << "Tanya810 [webrtc] candidate mode=INJECT ip=" << ip;
+  return MakeGarbageCollected<RTCIceCandidatePlatform>(
+      rewritten.ToString(), candidate->SdpMid(), candidate->SdpMLineIndex(),
+      candidate->UsernameFragment(), candidate->Url());
+}
+
+}  // namespace
+
 void RTCPeerConnection::DidGenerateICECandidate(
     RTCIceCandidatePlatform* platform_candidate) {
   DCHECK(!closed_);
   DCHECK(GetExecutionContext()->IsContextThread());
   DCHECK(platform_candidate);
+  platform_candidate = TanyaMaybeOverrideCandidateIp(platform_candidate);
   RTCIceCandidate* ice_candidate = RTCIceCandidate::Create(platform_candidate);
   MaybeDispatchEvent(RTCPeerConnectionIceEvent::Create(ice_candidate));
 }

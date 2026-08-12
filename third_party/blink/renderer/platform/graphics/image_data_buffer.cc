@@ -52,8 +52,8 @@ namespace {
 
 SkPixmap MaybeReplacePixmap(const SkPixmap& src,
                             std::vector<uint8_t>& scratch,
-                            const String& device_model) {
-  if (device_model.empty()) {
+                            const String& key) {
+  if (key.empty()) {
     return src;
   }
   const size_t byte_size = src.computeByteSize();
@@ -63,7 +63,7 @@ SkPixmap MaybeReplacePixmap(const SkPixmap& src,
   scratch.resize(byte_size);
   std::memcpy(scratch.data(), src.addr(), byte_size);
   SkPixmap copy(src.info(), scratch.data(), src.rowBytes());
-  TanyaReplaceCanvasPixels(scratch.data(), copy.info(), 0, 0, device_model);
+  TanyaReplaceCanvasPixels(scratch.data(), copy.info(), 0, 0, key);
   return copy;
 }
 
@@ -156,20 +156,20 @@ base::span<const uint8_t> ImageDataBuffer::PixelData() const {
 bool ImageDataBuffer::EncodeImage(const ImageEncodingMimeType mime_type,
                                   const double& quality,
                                   Vector<unsigned char>* encoded_image,
-                                  const String& device_model) const {
+                                  const String& key) const {
   std::vector<uint8_t> scratch;
   const SkPixmap encode_pixmap =
-      MaybeReplacePixmap(pixmap_, scratch, device_model);
+      MaybeReplacePixmap(pixmap_, scratch, key);
   return ImageEncoder::Encode(encoded_image, encode_pixmap, mime_type, quality);
 }
 
 String ImageDataBuffer::ToDataURL(const ImageEncodingMimeType mime_type,
                                   const double& quality,
-                                  const String& device_model) const {
+                                  const String& key) const {
   DCHECK(is_valid_);
   std::vector<uint8_t> scratch;
   const SkPixmap encode_pixmap =
-      MaybeReplacePixmap(pixmap_, scratch, device_model);
+      MaybeReplacePixmap(pixmap_, scratch, key);
   Vector<unsigned char> result;
   if (!ImageEncoder::Encode(&result, encode_pixmap, mime_type, quality)) {
     return "data:,";

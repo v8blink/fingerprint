@@ -100,18 +100,9 @@ struct BLINK_COMMON_EXPORT RendererPreferences {
   int autofill_shortcut_modifiers = 0;
   std::string autofill_trigger_string;
 
+  // Tanya810 Phase A: only the enable flag remains; the 11 flat fingerprint_*
+  // fields were removed (full profile now travels via a BigBuffer).
   bool fingerprint_enabled{false};
-  std::string fingerprint_platform;
-  std::string fingerprint_platform_version;
-  std::string fingerprint_brand;
-  std::string fingerprint_brand_version;
-  std::string fingerprint_gpu_vendor;
-  std::string fingerprint_gpu_renderer;
-  std::string fingerprint_hardware_concurrency;
-  std::string fingerprint_device_memory;
-  std::string fingerprint_timezone;
-  std::string fingerprint_languages;
-  std::string fingerprint_screen;
 
   RendererPreferences();
   RendererPreferences(const RendererPreferences& other);

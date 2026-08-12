@@ -291,53 +291,11 @@ struct BLINK_COMMON_EXPORT
     return data.view_source_line_wrap_enabled;
   }
 
+  // Tanya810 Phase A: only the enable flag remains; the 11 flat fingerprint_*
+  // getters were removed (full profile now travels via a BigBuffer).
   static const bool& fingerprint_enabled(
       const ::blink::RendererPreferences& data) {
     return data.fingerprint_enabled;
-  }
-  static const std::string& fingerprint_platform(
-      const ::blink::RendererPreferences& data) {
-    return data.fingerprint_platform;
-  }
-  static const std::string& fingerprint_platform_version(
-      const ::blink::RendererPreferences& data) {
-    return data.fingerprint_platform_version;
-  }
-  static const std::string& fingerprint_brand(
-      const ::blink::RendererPreferences& data) {
-    return data.fingerprint_brand;
-  }
-  static const std::string& fingerprint_brand_version(
-      const ::blink::RendererPreferences& data) {
-    return data.fingerprint_brand_version;
-  }
-  static const std::string& fingerprint_gpu_vendor(
-      const ::blink::RendererPreferences& data) {
-    return data.fingerprint_gpu_vendor;
-  }
-  static const std::string& fingerprint_gpu_renderer(
-      const ::blink::RendererPreferences& data) {
-    return data.fingerprint_gpu_renderer;
-  }
-  static const std::string& fingerprint_hardware_concurrency(
-      const ::blink::RendererPreferences& data) {
-    return data.fingerprint_hardware_concurrency;
-  }
-  static const std::string& fingerprint_device_memory(
-      const ::blink::RendererPreferences& data) {
-    return data.fingerprint_device_memory;
-  }
-  static const std::string& fingerprint_timezone(
-      const ::blink::RendererPreferences& data) {
-    return data.fingerprint_timezone;
-  }
-  static const std::string& fingerprint_languages(
-      const ::blink::RendererPreferences& data) {
-    return data.fingerprint_languages;
-  }
-  static const std::string& fingerprint_screen(
-      const ::blink::RendererPreferences& data) {
-    return data.fingerprint_screen;
   }
 
   static bool Read(blink::mojom::RendererPreferencesDataView,

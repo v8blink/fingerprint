@@ -53,11 +53,11 @@ class PLATFORM_EXPORT ImageDataBuffer {
 
   String ToDataURL(const ImageEncodingMimeType mime_type,
                    const double& quality,
-                   const String& device_model = String()) const;
+                   const String& key = String()) const;
   bool EncodeImage(const ImageEncodingMimeType mime_type,
                    const double& quality,
                    Vector<unsigned char>* encoded_image,
-                   const String& device_model = String()) const;
+                   const String& key = String()) const;
 
   base::span<const uint8_t> PixelData() const;
 

@@ -76,6 +76,7 @@
 #include "third_party/blink/renderer/core/geometry/dom_matrix.h"
 #include "third_party/blink/renderer/core/html/canvas/canvas_async_blob_creator.h"
 #include "third_party/blink/renderer/core/html/canvas/canvas_context_creation_attributes_core.h"
+#include "third_party/blink/renderer/platform/wtf/text/string_builder.h"
 #include "third_party/blink/renderer/core/html/canvas/canvas_draw_listener.h"
 #include "third_party/blink/renderer/core/html/canvas/canvas_font_cache.h"
 #include "third_party/blink/renderer/core/html/canvas/canvas_rendering_context.h"
@@ -1294,14 +1295,25 @@ String HTMLCanvasElement::ToDataURLInternal(
     if (!data_buffer)
       return String("data:,");
 
-    String tanya_device_model;
+    String tanya_key;  // empty => no injection
     const fingerprint::FingerprintPolicy& tanya_policy =
         GetDocument().GetFingerprintPolicy();
-    if (tanya_policy.enabled() && !tanya_policy.IsSurfaceDisabled("canvas")) {
-      tanya_device_model = String::FromUtf8(tanya_policy.device_model());
+    if (tanya_policy.enabled() && tanya_policy.SurfaceActive("canvas2d") &&
+        context_ && context_->IsRenderingContext2D()) {
+      const bool wrf = context_->CreationAttributes().will_read_frequently ==
+          CanvasContextCreationAttributesCore::WillReadFrequently::kTrue;
+      StringBuilder kb;
+      kb.AppendNumber(width());
+      kb.Append('_');
+      kb.AppendNumber(height());
+      kb.Append('_');
+      kb.Append(wrf ? '1' : '0');
+      kb.Append('_');
+      kb.Append(context_->TanyaDrawnText());
+      tanya_key = kb.ToString();
     }
     String data_url =
-        data_buffer->ToDataURL(encoding_mime_type, quality, tanya_device_model);
+        data_buffer->ToDataURL(encoding_mime_type, quality, tanya_key);
     base::TimeDelta elapsed_time = base::TimeTicks::Now() - start_time;
     float sqrt_pixels =
         std::sqrt(image_bitmap->width()) * std::sqrt(image_bitmap->height());

@@ -28,7 +28,12 @@
 
 #include "third_party/blink/renderer/core/frame/screen.h"
 
+#include <optional>
+
+#include "base/logging.h"
 #include "base/numerics/safe_conversions.h"
+#include "base/strings/string_number_conversions.h"
+#include "components/fingerprint/fingerprint_policy.h"
 #include "services/network/public/mojom/permissions_policy/permissions_policy_feature.mojom-blink.h"
 #include "third_party/blink/renderer/core/dom/document.h"
 #include "third_party/blink/renderer/core/event_target_names.h"
@@ -87,19 +92,62 @@ bool Screen::AreWebExposedScreenPropertiesEqual(
   return true;
 }
 
+namespace {
+
+// Tanya810 Phase A: "has -> inject user value, absent -> real value".
+// Reads surfaces["screen"][key] from the process-default fingerprint policy
+// (installed from the BigBuffer profile). Accepts int or numeric-string values.
+std::optional<int> TanyaScreenOverride(const char* key) {
+  const fingerprint::FingerprintPolicy& policy =
+      fingerprint::FingerprintPolicy::ProcessDefault();
+  if (!policy.enabled() || policy.IsSurfaceDisabled("screen")) {
+    return std::nullopt;
+  }
+  const base::Value* v = policy.SurfaceValue("screen", key);
+  if (!v) {
+    return std::nullopt;
+  }
+  if (std::optional<int> i = v->GetIfInt()) {
+    return i;
+  }
+  if (const std::string* s = v->GetIfString()) {
+    int parsed = 0;
+    if (base::StringToInt(*s, &parsed)) {
+      return parsed;
+    }
+  }
+  return std::nullopt;
+}
+
+}  // namespace
+
 int Screen::height() const {
+  if (std::optional<int> ov = TanyaScreenOverride("height")) {
+    VLOG(1) << "Tanya810 [screen] height mode=INJECT val=" << *ov;
+    return *ov;
+  }
   if (!DomWindow())
     return 0;
+  VLOG(1) << "Tanya810 [screen] height mode=REAL_FALLBACK";
   return GetRect(/*available=*/false).height();
 }
 
 int Screen::width() const {
+  if (std::optional<int> ov = TanyaScreenOverride("width")) {
+    VLOG(1) << "Tanya810 [screen] width mode=INJECT val=" << *ov;
+    return *ov;
+  }
   if (!DomWindow())
     return 0;
+  VLOG(1) << "Tanya810 [screen] width mode=REAL_FALLBACK";
   return GetRect(/*available=*/false).width();
 }
 
 unsigned Screen::colorDepth() const {
+  if (std::optional<int> ov = TanyaScreenOverride("colorDepth")) {
+    VLOG(1) << "Tanya810 [screen] colorDepth mode=INJECT val=" << *ov;
+    return base::saturated_cast<unsigned>(*ov);
+  }
   // "If the user agent does not know the color depth or does not want to
   // return it for privacy considerations, it should return 24."
   //
@@ -115,6 +163,10 @@ unsigned Screen::colorDepth() const {
 }
 
 unsigned Screen::pixelDepth() const {
+  if (std::optional<int> ov = TanyaScreenOverride("pixelDepth")) {
+    VLOG(1) << "Tanya810 [screen] pixelDepth mode=INJECT val=" << *ov;
+    return base::saturated_cast<unsigned>(*ov);
+  }
   return colorDepth();
 }
 
@@ -131,14 +183,24 @@ int Screen::availTop() const {
 }
 
 int Screen::availHeight() const {
+  if (std::optional<int> ov = TanyaScreenOverride("availHeight")) {
+    VLOG(1) << "Tanya810 [screen] availHeight mode=INJECT val=" << *ov;
+    return *ov;
+  }
   if (!DomWindow())
     return 0;
+  VLOG(1) << "Tanya810 [screen] availHeight mode=REAL_FALLBACK";
   return GetRect(/*available=*/true).height();
 }
 
 int Screen::availWidth() const {
+  if (std::optional<int> ov = TanyaScreenOverride("availWidth")) {
+    VLOG(1) << "Tanya810 [screen] availWidth mode=INJECT val=" << *ov;
+    return *ov;
+  }
   if (!DomWindow())
     return 0;
+  VLOG(1) << "Tanya810 [screen] availWidth mode=REAL_FALLBACK";
   return GetRect(/*available=*/true).width();
 }
 

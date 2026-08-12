@@ -21,6 +21,10 @@
 
 #include "third_party/blink/renderer/core/svg/svg_graphics_element.h"
 
+#include "base/logging.h"
+#include "base/values.h"
+#include "components/fingerprint/fingerprint_policy.h"
+
 #include "third_party/blink/renderer/core/frame/web_feature.h"
 #include "third_party/blink/renderer/core/layout/layout_object.h"
 #include "third_party/blink/renderer/core/layout/svg/layout_svg_container.h"
@@ -262,6 +266,20 @@ gfx::RectF SVGGraphicsElement::GetBBox() {
 }
 
 SVGRectTearOff* SVGGraphicsElement::getBBoxFromJavascript() {
+  // Tanya810 Phase C: replay surfaces.svg.bBox = {x,y,width,height} if provided.
+  const auto& tp = fingerprint::FingerprintPolicy::ProcessDefault();
+  if (tp.SurfaceActive("svg")) {
+    if (const base::DictValue* r = tp.GetSurfaceDict("svg", "bBoxFull")) {
+      gfx::RectF rect(static_cast<float>(r->FindDouble("x").value_or(0)),
+                      static_cast<float>(r->FindDouble("y").value_or(0)),
+                      static_cast<float>(r->FindDouble("width").value_or(0)),
+                      static_cast<float>(r->FindDouble("height").value_or(0)));
+      VLOG(1) << "Tanya810 [svg] getBBox mode=INJECT";
+      return SVGRectTearOff::CreateDetached(rect);
+    }
+  }
+  VLOG(1) << "Tanya810 [svg] getBBox mode=REAL_FALLBACK";
+
   GetDocument().UpdateStyleAndLayoutForNode(this,
                                             DocumentUpdateReason::kJavaScript);
 

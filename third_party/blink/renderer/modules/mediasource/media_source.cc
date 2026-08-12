@@ -4,6 +4,10 @@
 
 #include "third_party/blink/renderer/modules/mediasource/media_source.h"
 
+#include "base/logging.h"
+#include "base/values.h"
+#include "components/fingerprint/fingerprint_policy.h"
+
 #include <memory>
 #include <tuple>
 
@@ -520,6 +524,28 @@ bool MediaSource::IsUpdating() const {
 // static
 bool MediaSource::isTypeSupported(ExecutionContext* context,
                                   const String& type) {
+  // Tanya810 Phase C: replay surfaces.media.mimeTypes[type].mediaSource.
+  const auto& tp = fingerprint::FingerprintPolicy::ProcessDefault();
+  if (tp.SurfaceActive("media")) {
+    if (const base::ListValue* list =
+            tp.GetSurfaceList("media", "mimeTypes")) {
+      const std::string mt = type.Utf8();
+      for (const base::Value& e : *list) {
+        const base::DictValue* d = e.GetIfDict();
+        if (!d) {
+          continue;
+        }
+        const std::string* m = d->FindString("mimeType");
+        if (!m || *m != mt) {
+          continue;
+        }
+        const bool r = d->FindBool("mediaSource").value_or(false);
+        VLOG(1) << "Tanya810 [media] MediaSource.isTypeSupported mode=INJECT mt="
+                << mt << " r=" << r;
+        return r;
+      }
+    }
+  }
   bool result = IsTypeSupportedInternal(
       context, type, true /* Require fully specified mime and codecs */);
   DVLOG(2) << __func__ << "(" << type << ") -> " << base::ToString(result);

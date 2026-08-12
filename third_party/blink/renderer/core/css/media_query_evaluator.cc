@@ -29,6 +29,11 @@
 
 #include "third_party/blink/renderer/core/css/media_query_evaluator.h"
 
+#include "base/logging.h"
+#include "base/strings/string_number_conversions.h"
+#include "base/values.h"
+#include "components/fingerprint/fingerprint_policy.h"
+
 #include "base/functional/function_ref.h"
 #include "base/notreached.h"
 #include "third_party/blink/public/common/css/forced_colors.h"
@@ -361,11 +366,45 @@ static bool ColorIndexMediaFeatureEval(const MediaQueryExpValue& value,
          CompareValue(0, ClampTo<int>(number), op);
 }
 
+// Tanya810 Phase C: returns surfaces.cssMedia.matchMediaCSS[feature] or nullopt.
+static std::optional<std::string> TanyaCssMedia(const char* feature) {
+  const auto& p = fingerprint::FingerprintPolicy::ProcessDefault();
+  if (!p.SurfaceActive("cssMedia")) {
+    return std::nullopt;
+  }
+  const base::DictValue* mm = p.GetSurfaceDict("cssMedia", "matchMediaCSS");
+  if (!mm) {
+    return std::nullopt;
+  }
+  const std::string* s = mm->FindString(feature);
+  if (!s) {
+    return std::nullopt;
+  }
+  return *s;
+}
+
+static int TanyaDeviceDim(const char* key, int real_value) {
+  const auto& p = fingerprint::FingerprintPolicy::ProcessDefault();
+  if (p.SurfaceActive("screen")) {
+    if (std::optional<int> v = p.GetSurfaceInt("screen", key)) {
+      return *v;
+    }
+  }
+  return real_value;
+}
+
 static bool MonochromeMediaFeatureEval(const MediaQueryExpValue& value,
                                        MediaQueryOperator op,
                                        const MediaValues& media_values) {
   float number;
   int bits_per_component = media_values.MonochromeBitsPerComponent();
+  if (std::optional<std::string> v = TanyaCssMedia("monochrome")) {
+    int n = 0;
+    if (base::StringToInt(*v, &n)) {
+      bits_per_component = n;
+    }
+    VLOG(1) << "Tanya810 [cssMedia] monochrome mode=INJECT val=" << *v;
+  }
   if (value.IsValid()) {
     return NumberValue(value, number, media_values) &&
            CompareValue(bits_per_component, ClampTo<int>(number), op);
@@ -391,6 +430,18 @@ static bool DisplayModeMediaFeatureEval(const MediaQueryExpValue& value,
   }
 
   mojom::blink::DisplayMode mode = media_values.DisplayMode();
+  if (std::optional<std::string> v = TanyaCssMedia("display-mode")) {
+    if (*v == "fullscreen") {
+      mode = mojom::blink::DisplayMode::kFullscreen;
+    } else if (*v == "standalone") {
+      mode = mojom::blink::DisplayMode::kStandalone;
+    } else if (*v == "minimal-ui") {
+      mode = mojom::blink::DisplayMode::kMinimalUi;
+    } else if (*v == "browser") {
+      mode = mojom::blink::DisplayMode::kBrowser;
+    }
+    VLOG(1) << "Tanya810 [cssMedia] display-mode mode=INJECT val=" << *v;
+  }
 
   switch (value.Id()) {
     case CSSValueID::kFullscreen:
@@ -468,6 +519,14 @@ static bool ResizableMediaFeatureEval(const MediaQueryExpValue& value,
 static bool OrientationMediaFeatureEval(const MediaQueryExpValue& value,
                                         MediaQueryOperator,
                                         const MediaValues& media_values) {
+  if (std::optional<std::string> v = TanyaCssMedia("orientation")) {
+    VLOG(1) << "Tanya810 [cssMedia] orientation mode=INJECT val=" << *v;
+    if (value.IsId()) {
+      return (value.Id() == CSSValueID::kLandscape && *v == "landscape") ||
+             (value.Id() == CSSValueID::kPortrait && *v == "portrait");
+    }
+    return true;
+  }
   double width = *media_values.Width();
   double height = *media_values.Height();
 
@@ -500,9 +559,10 @@ static bool DeviceAspectRatioMediaFeatureEval(const MediaQueryExpValue& value,
                                               MediaQueryOperator op,
                                               const MediaValues& media_values) {
   if (value.IsValid()) {
-    return CompareAspectRatioValue(value, media_values.DeviceWidth(),
-                                   media_values.DeviceHeight(), op,
-                                   media_values);
+    return CompareAspectRatioValue(
+        value, TanyaDeviceDim("width", media_values.DeviceWidth()),
+        TanyaDeviceDim("height", media_values.DeviceHeight()), op,
+        media_values);
   }
 
   // ({,min-,max-}device-aspect-ratio)
@@ -650,8 +710,9 @@ static bool DeviceHeightMediaFeatureEval(const MediaQueryExpValue& value,
                                          MediaQueryOperator op,
                                          const MediaValues& media_values) {
   if (value.IsValid()) {
-    return ComputeLengthAndCompare(value, op, media_values,
-                                   media_values.DeviceHeight());
+    return ComputeLengthAndCompare(
+        value, op, media_values,
+        TanyaDeviceDim("height", media_values.DeviceHeight()));
   }
 
   // ({,min-,max-}device-height)
@@ -663,8 +724,9 @@ static bool DeviceWidthMediaFeatureEval(const MediaQueryExpValue& value,
                                         MediaQueryOperator op,
                                         const MediaValues& media_values) {
   if (value.IsValid()) {
-    return ComputeLengthAndCompare(value, op, media_values,
-                                   media_values.DeviceWidth());
+    return ComputeLengthAndCompare(
+        value, op, media_values,
+        TanyaDeviceDim("width", media_values.DeviceWidth()));
   }
 
   // ({,min-,max-}device-width)
@@ -931,6 +993,10 @@ static bool HoverMediaFeatureEval(const MediaQueryExpValue& value,
                                   MediaQueryOperator,
                                   const MediaValues& media_values) {
   HoverType hover = media_values.PrimaryHoverType();
+  if (std::optional<std::string> v = TanyaCssMedia("hover")) {
+    hover = (*v == "hover") ? HoverType::kHoverHoverType : HoverType::kHoverNone;
+    VLOG(1) << "Tanya810 [cssMedia] hover mode=INJECT val=" << *v;
+  }
 
   if (!value.IsValid()) {
     return hover != HoverType::kHoverNone;
@@ -949,6 +1015,12 @@ static bool AnyHoverMediaFeatureEval(const MediaQueryExpValue& value,
                                      MediaQueryOperator,
                                      const MediaValues& media_values) {
   int available_hover_types = media_values.AvailableHoverTypes();
+  if (std::optional<std::string> v = TanyaCssMedia("any-hover")) {
+    available_hover_types =
+        (*v == "hover") ? static_cast<int>(HoverType::kHoverHoverType)
+                        : static_cast<int>(HoverType::kHoverNone);
+    VLOG(1) << "Tanya810 [cssMedia] any-hover mode=INJECT val=" << *v;
+  }
 
   if (!value.IsValid()) {
     return available_hover_types & ~static_cast<int>(HoverType::kHoverNone);
@@ -982,6 +1054,16 @@ static bool PointerMediaFeatureEval(const MediaQueryExpValue& value,
                                     MediaQueryOperator,
                                     const MediaValues& media_values) {
   PointerType pointer = media_values.PrimaryPointerType();
+  if (std::optional<std::string> v = TanyaCssMedia("pointer")) {
+    if (*v == "fine") {
+      pointer = PointerType::kPointerFineType;
+    } else if (*v == "coarse") {
+      pointer = PointerType::kPointerCoarseType;
+    } else if (*v == "none") {
+      pointer = PointerType::kPointerNone;
+    }
+    VLOG(1) << "Tanya810 [cssMedia] pointer mode=INJECT val=" << *v;
+  }
 
   if (!value.IsValid()) {
     return pointer != PointerType::kPointerNone;
@@ -1006,18 +1088,31 @@ static bool PrefersReducedMotionMediaFeatureEval(
   UseCounter::Count(media_values.GetDocument(),
                     WebFeature::kPrefersReducedMotionMediaFeature);
 
+  bool reduced = media_values.PrefersReducedMotion();
+  // Tanya810 Phase C: replay cssMedia.matchMediaCSS["prefers-reduced-motion"].
+  const auto& tp = fingerprint::FingerprintPolicy::ProcessDefault();
+  if (tp.SurfaceActive("cssMedia")) {
+    if (const base::DictValue* mm =
+            tp.GetSurfaceDict("cssMedia", "matchMediaCSS")) {
+      if (const std::string* s = mm->FindString("prefers-reduced-motion")) {
+        reduced = (*s == "reduce");
+        VLOG(1) << "Tanya810 [cssMedia] prefers-reduced-motion mode=INJECT val="
+                << *s;
+      }
+    }
+  }
+
   // If the value is not valid, this was passed without an argument. In that
   // case, it implicitly resolves to 'reduce'.
   if (!value.IsValid()) {
-    return media_values.PrefersReducedMotion();
+    return reduced;
   }
 
   if (!value.IsId()) {
     return false;
   }
 
-  return (value.Id() == CSSValueID::kNoPreference) ^
-         media_values.PrefersReducedMotion();
+  return (value.Id() == CSSValueID::kNoPreference) ^ reduced;
 }
 
 static bool PrefersReducedDataMediaFeatureEval(
@@ -1062,6 +1157,16 @@ static bool AnyPointerMediaFeatureEval(const MediaQueryExpValue& value,
                                        MediaQueryOperator,
                                        const MediaValues& media_values) {
   int available_pointers = media_values.AvailablePointerTypes();
+  if (std::optional<std::string> v = TanyaCssMedia("any-pointer")) {
+    if (*v == "fine") {
+      available_pointers = static_cast<int>(PointerType::kPointerFineType);
+    } else if (*v == "coarse") {
+      available_pointers = static_cast<int>(PointerType::kPointerCoarseType);
+    } else {
+      available_pointers = static_cast<int>(PointerType::kPointerNone);
+    }
+    VLOG(1) << "Tanya810 [cssMedia] any-pointer mode=INJECT val=" << *v;
+  }
 
   if (!value.IsValid()) {
     return available_pointers & ~static_cast<int>(PointerType::kPointerNone);
@@ -1111,6 +1216,19 @@ static bool ScanMediaFeatureEval(const MediaQueryExpValue& value,
 static bool ColorGamutMediaFeatureEval(const MediaQueryExpValue& value,
                                        MediaQueryOperator,
                                        const MediaValues& media_values) {
+  if (std::optional<std::string> v = TanyaCssMedia("color-gamut")) {
+    VLOG(1) << "Tanya810 [cssMedia] color-gamut mode=INJECT val=" << *v;
+    if (!value.IsValid()) {
+      return true;
+    }
+    if (!value.IsId()) {
+      return false;
+    }
+    return (value.Id() == CSSValueID::kSRGB && *v == "srgb") ||
+           (value.Id() == CSSValueID::kP3 && *v == "p3") ||
+           (value.Id() == CSSValueID::kRec2020 && *v == "rec2020");
+  }
+
   // isValid() is false if there is no parameter. Without parameter we should
   // return true to indicate that colorGamutMediaFeature is enabled in the
   // browser.
@@ -1158,6 +1276,23 @@ static bool PrefersColorSchemeMediaFeatureEval(
                     WebFeature::kPrefersColorSchemeMediaFeature);
 
   auto preferred_scheme = media_values.GetPreferredColorScheme();
+
+  // Tanya810 Phase C: replay surfaces.cssMedia.matchMediaCSS["prefers-color-scheme"].
+  const auto& tp = fingerprint::FingerprintPolicy::ProcessDefault();
+  if (tp.SurfaceActive("cssMedia")) {
+    if (const base::DictValue* mm =
+            tp.GetSurfaceDict("cssMedia", "matchMediaCSS")) {
+      if (const std::string* s = mm->FindString("prefers-color-scheme")) {
+        if (*s == "dark") {
+          preferred_scheme = mojom::blink::PreferredColorScheme::kDark;
+        } else if (*s == "light") {
+          preferred_scheme = mojom::blink::PreferredColorScheme::kLight;
+        }
+        VLOG(1) << "Tanya810 [cssMedia] prefers-color-scheme mode=INJECT val="
+                << *s;
+      }
+    }
+  }
 
   if (!value.IsValid()) {
     return true;
@@ -1211,6 +1346,11 @@ static bool ForcedColorsMediaFeatureEval(const MediaQueryExpValue& value,
                     WebFeature::kForcedColorsMediaFeature);
 
   ForcedColors forced_colors = media_values.GetForcedColors();
+  if (std::optional<std::string> v = TanyaCssMedia("forced-colors")) {
+    forced_colors =
+        (*v == "active") ? ForcedColors::kActive : ForcedColors::kNone;
+    VLOG(1) << "Tanya810 [cssMedia] forced-colors mode=INJECT val=" << *v;
+  }
 
   if (!value.IsValid()) {
     return forced_colors != ForcedColors::kNone;

@@ -4,6 +4,10 @@
 
 #include "third_party/blink/renderer/modules/bluetooth/bluetooth.h"
 
+#include "base/logging.h"
+#include "base/values.h"
+#include "components/fingerprint/fingerprint_policy.h"
+
 #include <utility>
 
 #include "build/build_config.h"
@@ -315,6 +319,21 @@ ScriptPromise<IDLBoolean> Bluetooth::getAvailability(
     ScriptState* script_state,
     ExceptionState& exception_state) {
   LocalDOMWindow* window = GetSupplementable()->DomWindow();
+
+  // Tanya810 Phase C: replay surfaces.navigator.bluetoothAvailability (bool).
+  {
+    const auto& tp = fingerprint::FingerprintPolicy::ProcessDefault();
+    if (tp.SurfaceActive("navigator")) {
+      if (const base::Value* v =
+              tp.SurfaceValue("navigator", "bluetoothAvailability")) {
+        if (std::optional<bool> b = v->GetIfBool()) {
+          VLOG(1) << "Tanya810 [navigator] bluetoothAvailability mode=INJECT val="
+                  << *b;
+          return ToResolvedPromise<IDLBoolean>(script_state, *b);
+        }
+      }
+    }
+  }
 
   if (IsRequestDenied(window, exception_state)) {
     return EmptyPromise();

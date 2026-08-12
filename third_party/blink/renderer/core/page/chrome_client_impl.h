@@ -340,8 +340,10 @@ class CORE_EXPORT ChromeClientImpl final : public ChromeClient {
  private:
   bool IsChromeClientImpl() const override { return true; }
 
-  mutable std::unique_ptr<fingerprint::FingerprintPolicy>
-      fingerprint_policy_cache_;
+  // Tanya810 Phase A: the per-WebView policy cache was removed. The full
+  // structured profile is installed as the process default eagerly in
+  // WebViewImpl::UpdateTanyaFingerprintProfile, so GetFingerprintPolicy() just
+  // returns FingerprintPolicy::ProcessDefault().
 
   void SetCursorInternal(const ui::Cursor&, LocalFrame*);
 

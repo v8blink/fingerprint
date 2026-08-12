@@ -26,6 +26,10 @@
 
 #include "third_party/blink/renderer/core/dom/element.h"
 
+#include "base/logging.h"
+#include "base/values.h"
+#include "components/fingerprint/fingerprint_policy.h"
+
 #include <algorithm>
 #include <bitset>
 #include <limits>
@@ -3349,6 +3353,46 @@ void Element::ClientQuads(Vector<gfx::QuadF>& quads) const {
 }
 
 DOMRectList* Element::getClientRects() {
+  {
+    const fingerprint::FingerprintPolicy& tp =
+        fingerprint::FingerprintPolicy::ProcessDefault();
+    DEFINE_STATIC_LOCAL(AtomicString, kTanyaRectsClass, ("rects"));
+    if (tp.SurfaceActive("clientRects") && HasClassName(kTanyaRectsClass)) {
+      if (const base::ListValue* arr =
+              tp.GetSurfaceList("clientRects", "elementClientRects")) {
+        if (!arr->empty()) {
+          HTMLCollection* coll =
+              GetDocument().getElementsByClassName(kTanyaRectsClass);
+          unsigned tanya_idx = 0;
+          bool tanya_found = false;
+          for (unsigned i = 0; coll && i < coll->length(); ++i) {
+            if (coll->item(i) == this) {
+              tanya_idx = i;
+              tanya_found = true;
+              break;
+            }
+          }
+          const base::DictValue* d =
+              tanya_found ? (*arr)[tanya_idx % arr->size()].GetIfDict()
+                          : nullptr;
+          if (d) {
+            Vector<gfx::RectF> injected;
+            injected.emplace_back(
+                static_cast<float>(d->FindDouble("x").value_or(0)),
+                static_cast<float>(d->FindDouble("y").value_or(0)),
+                static_cast<float>(d->FindDouble("width").value_or(0)),
+                static_cast<float>(d->FindDouble("height").value_or(0)));
+            VLOG(1) << "Tanya810 [clientRects] getClientRects mode=INJECT idx="
+                    << tanya_idx;
+            return MakeGarbageCollected<DOMRectList>(injected);
+          }
+          VLOG(1) << "Tanya810 [clientRects] getClientRects mode=REAL_FALLBACK"
+                  << " found=" << tanya_found;
+        }
+      }
+    }
+  }
+
   Vector<gfx::RectF> rects = GetClientRectsNoAdjustment();
   if (rects.empty()) {
     return MakeGarbageCollected<DOMRectList>();
@@ -3409,6 +3453,44 @@ gfx::RectF Element::GetBoundingClientRectNoLifecycleUpdate() const {
 }
 
 DOMRect* Element::GetBoundingClientRect() {
+  {
+    const fingerprint::FingerprintPolicy& tp =
+        fingerprint::FingerprintPolicy::ProcessDefault();
+    DEFINE_STATIC_LOCAL(AtomicString, kTanyaRectsClass, ("rects"));
+    if (tp.SurfaceActive("clientRects") && HasClassName(kTanyaRectsClass)) {
+      if (const base::ListValue* arr =
+              tp.GetSurfaceList("clientRects", "elementBoundingClientRect")) {
+        if (!arr->empty()) {
+          HTMLCollection* coll =
+              GetDocument().getElementsByClassName(kTanyaRectsClass);
+          unsigned tanya_idx = 0;
+          bool tanya_found = false;
+          for (unsigned i = 0; coll && i < coll->length(); ++i) {
+            if (coll->item(i) == this) {
+              tanya_idx = i;
+              tanya_found = true;
+              break;
+            }
+          }
+          const base::DictValue* d =
+              tanya_found ? (*arr)[tanya_idx % arr->size()].GetIfDict()
+                          : nullptr;
+          if (d) {
+            VLOG(1) << "Tanya810 [clientRects] getBoundingClientRect mode=INJECT idx="
+                    << tanya_idx;
+            return DOMRect::FromRectF(gfx::RectF(
+                static_cast<float>(d->FindDouble("x").value_or(0)),
+                static_cast<float>(d->FindDouble("y").value_or(0)),
+                static_cast<float>(d->FindDouble("width").value_or(0)),
+                static_cast<float>(d->FindDouble("height").value_or(0))));
+          }
+          VLOG(1) << "Tanya810 [clientRects] getBoundingClientRect mode=REAL_FALLBACK"
+                  << " found=" << tanya_found;
+        }
+      }
+    }
+  }
+
   GetDocument().EnsurePaintLocationDataValidForNode(
       this, DocumentUpdateReason::kJavaScript);
   return DOMRect::FromRectF(GetBoundingClientRectNoLifecycleUpdate());

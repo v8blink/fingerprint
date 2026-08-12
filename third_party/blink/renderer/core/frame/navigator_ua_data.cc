@@ -4,6 +4,12 @@
 
 #include "third_party/blink/renderer/core/frame/navigator_ua_data.h"
 
+#include <optional>
+
+#include "base/logging.h"
+#include "base/values.h"
+#include "components/fingerprint/fingerprint_policy.h"
+
 #include "base/compiler_specific.h"
 #include "base/task/single_thread_task_runner.h"
 #include "third_party/blink/public/common/features.h"
@@ -149,18 +155,45 @@ ScriptPromise<UADataValues> NavigatorUAData::getHighEntropyValues(
 
   // If the "ch-ua-high-entropy-values" permission policy is enabled for a
   // document, add high-entropy client hints to values (if requested)
+  // Tanya810 Phase C: surfaces.navigator.userAgentData overrides for the
+  // high-entropy hints (architecture/model/bitness).
+  const auto tanya_ua = [](const char* key) -> std::optional<String> {
+    const auto& tp = fingerprint::FingerprintPolicy::ProcessDefault();
+    if (!tp.SurfaceActive("navigator")) {
+      return std::nullopt;
+    }
+    const base::DictValue* ua =
+        tp.GetSurfaceDict("navigator", "userAgentData");
+    if (!ua) {
+      return std::nullopt;
+    }
+    const std::string* s = ua->FindString(key);
+    if (!s) {
+      return std::nullopt;
+    }
+    return String::FromUtf8(*s);
+  };
   if (AllowedToCollectHighEntropyValues(execution_context)) {
     for (const String& hint : hints) {
       if (hint == "platformVersion") {
         values->setPlatformVersion(platform_version_);
       } else if (hint == "architecture") {
-        values->setArchitecture(architecture_);
+        std::optional<String> v = tanya_ua("architecture");
+        values->setArchitecture(v ? *v : architecture_);
+        VLOG(1) << "Tanya810 [navigator] ua.architecture mode="
+                << (v ? "INJECT" : "REAL_FALLBACK");
       } else if (hint == "model") {
-        values->setModel(model_);
+        std::optional<String> v = tanya_ua("model");
+        values->setModel(v ? *v : model_);
+        VLOG(1) << "Tanya810 [navigator] ua.model mode="
+                << (v ? "INJECT" : "REAL_FALLBACK");
       } else if (hint == "uaFullVersion") {
         values->setUaFullVersion(ua_full_version_);
       } else if (hint == "bitness") {
-        values->setBitness(bitness_);
+        std::optional<String> v = tanya_ua("bitness");
+        values->setBitness(v ? *v : bitness_);
+        VLOG(1) << "Tanya810 [navigator] ua.bitness mode="
+                << (v ? "INJECT" : "REAL_FALLBACK");
       } else if (hint == "fullVersionList") {
         values->setFullVersionList(full_version_list_);
       } else if (hint == "wow64") {

@@ -3,12 +3,17 @@
 
 #include <atomic>
 #include <functional>
+#include <memory>
+#include <optional>
+#include <string_view>
 #include <utility>
 
 #include "base/command_line.h"
+#include "base/json/json_reader.h"
 #include "base/logging.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_split.h"
+#include "base/values.h"
 #include "components/fingerprint/switches.h"
 
 namespace fingerprint {
@@ -97,6 +102,49 @@ FingerprintPolicy FingerprintPolicy::FromCommandLine() {
   return p;
 }
 
+FingerprintPolicy FingerprintPolicy::FromProfileJson(
+    base::span<const uint8_t> bytes) {
+  FingerprintPolicy p;
+  std::string_view json(reinterpret_cast<const char*>(bytes.data()),
+                        bytes.size());
+  std::optional<base::Value> parsed =
+      base::JSONReader::Read(json, base::JSON_PARSE_RFC);
+  if (!parsed || !parsed->is_dict()) {
+    VLOG(1) << "Tanya810 [policy] FromProfileJson parse_failed bytes="
+            << bytes.size();
+    return p;
+  }
+  const base::DictValue& dict = parsed->GetDict();
+  const auto get = [&dict](const char* key) -> std::string {
+    const std::string* v = dict.FindString(key);
+    return v ? *v : std::string();
+  };
+  p.enabled_ = true;
+  p.platform_ = get("platform");
+  p.platform_version_ = get("platform_version");
+  p.brand_ = get("brand");
+  p.brand_version_ = get("brand_version");
+  p.device_model_ = get("device_model");
+  p.gpu_vendor_ = get("gpu_vendor");
+  p.gpu_renderer_ = get("gpu_renderer");
+  p.hardware_concurrency_ = get("hardware_concurrency");
+  p.device_memory_ = get("device_memory");
+  p.timezone_ = get("timezone");
+  p.languages_ = get("languages");
+  p.screen_ = get("screen");
+  p.webrtc_public_ip_ = get("webrtc_public_ip");
+
+  size_t surface_count = 0;
+  if (const base::DictValue* surfaces = dict.FindDict("surfaces")) {
+    surface_count = surfaces->size();
+    p.surfaces_ = std::make_shared<const base::DictValue>(surfaces->Clone());
+  }
+  VLOG(1) << "Tanya810 [policy] FromProfileJson parse_ok bytes=" << bytes.size()
+          << " surfaces=" << surface_count << " platform=" << p.platform_
+          << " screen=" << p.screen_;
+  return p;
+}
+
 const FingerprintPolicy& FingerprintPolicy::ProcessDefault() {
   const FingerprintPolicy* p =
       g_process_default.load(std::memory_order_acquire);
@@ -130,4 +178,99 @@ bool FingerprintPolicy::IsSurfaceDisabled(std::string_view surface) const {
   return false;
 }
 
-}  
+bool FingerprintPolicy::has_surface(std::string_view name) const {
+  return surfaces_ && surfaces_->Find(name) != nullptr;
+}
+
+const base::DictValue* FingerprintPolicy::surface(
+    std::string_view name) const {
+  return surfaces_ ? surfaces_->FindDict(name) : nullptr;
+}
+
+const base::Value* FingerprintPolicy::SurfaceValue(
+    std::string_view surface_name,
+    std::string_view key) const {
+  const base::DictValue* s = surface(surface_name);
+  return s ? s->Find(key) : nullptr;
+}
+
+bool FingerprintPolicy::SurfaceActive(std::string_view surface_name) const {
+  return enabled_ && has_surface(surface_name) &&
+         !IsSurfaceDisabled(surface_name);
+}
+
+std::optional<std::string> FingerprintPolicy::GetSurfaceString(
+    std::string_view surface_name,
+    std::string_view key) const {
+  const base::Value* v = SurfaceValue(surface_name, key);
+  if (v) {
+    if (const std::string* s = v->GetIfString()) {
+      return *s;
+    }
+  }
+  return std::nullopt;
+}
+
+std::optional<int> FingerprintPolicy::GetSurfaceInt(
+    std::string_view surface_name,
+    std::string_view key) const {
+  const base::Value* v = SurfaceValue(surface_name, key);
+  if (!v) {
+    return std::nullopt;
+  }
+  if (std::optional<int> i = v->GetIfInt()) {
+    return i;
+  }
+  if (const std::string* s = v->GetIfString()) {
+    int parsed = 0;
+    if (base::StringToInt(*s, &parsed)) {
+      return parsed;
+    }
+  }
+  return std::nullopt;
+}
+
+std::optional<double> FingerprintPolicy::GetSurfaceDouble(
+    std::string_view surface_name,
+    std::string_view key) const {
+  const base::Value* v = SurfaceValue(surface_name, key);
+  if (!v) {
+    return std::nullopt;
+  }
+  if (std::optional<int> i = v->GetIfInt()) {
+    return static_cast<double>(*i);
+  }
+  if (std::optional<double> d = v->GetIfDouble()) {
+    return d;
+  }
+  if (const std::string* s = v->GetIfString()) {
+    double parsed = 0;
+    if (base::StringToDouble(*s, &parsed)) {
+      return parsed;
+    }
+  }
+  return std::nullopt;
+}
+
+const base::ListValue* FingerprintPolicy::GetSurfaceList(
+    std::string_view surface_name,
+    std::string_view key) const {
+  const base::Value* v = SurfaceValue(surface_name, key);
+  return v ? v->GetIfList() : nullptr;
+}
+
+const base::DictValue* FingerprintPolicy::GetSurfaceDict(
+    std::string_view surface_name,
+    std::string_view key) const {
+  const base::Value* v = SurfaceValue(surface_name, key);
+  return v ? v->GetIfDict() : nullptr;
+}
+
+const base::ListValue* FingerprintPolicy::GetCanvas2dPixelsByKey(
+    std::string_view key) const {
+  const base::DictValue* c = surface("canvas2d");
+  const base::DictValue* pbk = c ? c->FindDict("pixelsByKey") : nullptr;
+  return pbk ? pbk->FindList(key) : nullptr;
+}
+
+}

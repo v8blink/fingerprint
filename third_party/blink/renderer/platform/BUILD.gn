@@ -1846,6 +1846,7 @@ component("platform") {
     "//build:chromecast_buildflags",
     "//cc",
     "//cc/mojo_embedder",
+    "//components/fingerprint",
     "//components/input",
     "//components/language_detection/content/common",
     "//components/language_detection/content/common:common_blink",
