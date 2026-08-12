@@ -115,24 +115,18 @@ unsigned SVGTextContentElement::getNumberOfChars() {
 }
 
 float SVGTextContentElement::getComputedTextLength() {
-  // Tanya810 Phase C: surfaces.svg.computedTextLength (scalar) has -> inject.
   const auto& tp = fingerprint::FingerprintPolicy::ProcessDefault();
   if (tp.SurfaceActive("svg")) {
     if (const base::DictValue* m =
             tp.GetSurfaceDict("svg", "computedTextLengthByEmoji")) {
       if (auto ev = m->FindDouble(textContent().Utf8())) {
-        VLOG(1) << "Tanya810 [svg] getComputedTextLength mode=INJECT byEmoji val="
-                << *ev;
         return static_cast<float>(*ev);
       }
     }
     if (auto v = tp.GetSurfaceDouble("svg", "computedTextLength")) {
-      VLOG(1) << "Tanya810 [svg] getComputedTextLength mode=INJECT single val="
-              << *v;
       return static_cast<float>(*v);
     }
   }
-  VLOG(1) << "Tanya810 [svg] computedTextLength mode=REAL_FALLBACK";
   GetDocument().UpdateStyleAndLayoutForNode(this,
                                             DocumentUpdateReason::kJavaScript);
   auto* layout_object = GetLayoutObject();
@@ -164,15 +158,12 @@ float SVGTextContentElement::getSubStringLength(
   if (nchars > number_of_chars - charnum)
     nchars = number_of_chars - charnum;
 
-  // Tanya810 Phase C: surfaces.svg.subStringLength (scalar) has -> inject.
   const auto& tp = fingerprint::FingerprintPolicy::ProcessDefault();
   if (tp.SurfaceActive("svg")) {
     if (std::optional<double> v = tp.GetSurfaceDouble("svg", "subStringLength")) {
-      VLOG(1) << "Tanya810 [svg] subStringLength mode=INJECT val=" << *v;
       return static_cast<float>(*v);
     }
   }
-  VLOG(1) << "Tanya810 [svg] subStringLength mode=REAL_FALLBACK";
 
   auto* layout_object = GetLayoutObject();
   if (IsNGTextOrInline(layout_object)) {
@@ -246,7 +237,6 @@ SVGRectTearOff* SVGTextContentElement::getExtentOfChar(
   }
 
   gfx::RectF rect;
-  // Tanya810 Phase C: replay surfaces.svg.extentOfChar = {x,y,width,height}.
   const auto& tp = fingerprint::FingerprintPolicy::ProcessDefault();
   if (tp.SurfaceActive("svg")) {
     if (const base::DictValue* r = tp.GetSurfaceDict("svg", "extentOfCharFull")) {
@@ -254,11 +244,9 @@ SVGRectTearOff* SVGTextContentElement::getExtentOfChar(
                         static_cast<float>(r->FindDouble("y").value_or(0)),
                         static_cast<float>(r->FindDouble("width").value_or(0)),
                         static_cast<float>(r->FindDouble("height").value_or(0)));
-      VLOG(1) << "Tanya810 [svg] getExtentOfChar mode=INJECT";
       return SVGRectTearOff::CreateDetached(rect);
     }
   }
-  VLOG(1) << "Tanya810 [svg] getExtentOfChar mode=REAL_FALLBACK";
   auto* layout_object = GetLayoutObject();
   if (IsNGTextOrInline(layout_object)) {
     rect = NoopWillBeInvScaleRect(

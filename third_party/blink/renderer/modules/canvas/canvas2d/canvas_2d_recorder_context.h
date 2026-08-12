@@ -105,9 +105,6 @@ class MODULES_EXPORT Canvas2DRecorderContext : public CanvasPath {
 
   ~Canvas2DRecorderContext() override;
 
-  // Tanya810: text drawn on this context since the last clear/reset. Appended in
-  // BaseRenderingContext2D::DrawTextInternal, reset in ResetInternal()/
-  // clearRect(). Read via CanvasRenderingContext::TanyaDrawnText() override.
   String tanya_drawn_text_;
 
   v8::Local<v8::Value> strokeStyle(ScriptState* script_state) const;

@@ -43,6 +43,6 @@ const TanyaWebGLCaptureEntry* FindTanyaWebGLCapture(
     int32_t canvas_width,
     int32_t canvas_height);
 
-}  // namespace blink
+}
 
-#endif  // THIRD_PARTY_BLINK_RENDERER_MODULES_WEBGL_TANYA_WEBGL_CAPTURE_DATA_H_
+#endif

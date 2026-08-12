@@ -7157,7 +7157,6 @@ blink::RendererPreferences* WebContentsImpl::GetMutableRendererPrefs() {
 }
 
 void WebContentsImpl::SetTanyaFingerprintProfileJson(std::string json) {
-  VLOG(1) << "Tanya810 [webcontents] set_profile bytes=" << json.size();
   tanya_fingerprint_profile_json_ = std::move(json);
 }
 

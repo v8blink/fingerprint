@@ -106,7 +106,7 @@ void ApplyFingerprintLocaleOverride() {
   base::i18n::SetICUDefaultLocale(primary);
 }
 
-}  // namespace
+}
 
 CoreInitializer* CoreInitializer::instance_ = nullptr;
 

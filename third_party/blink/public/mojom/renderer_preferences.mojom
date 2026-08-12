@@ -205,9 +205,5 @@ struct RendererPreferences {
   // Whether line wrapping should be enabled by default in view source pages.
   bool view_source_line_wrap_enabled = false;
 
-  // Tanya810 Phase A: only the enable flag remains here. The 11 flat
-  // fingerprint_* fields were removed; the full structured fingerprint profile
-  // is now delivered out-of-band via PageBroadcast.UpdateTanyaFingerprintProfile
-  // (a BigBuffer), and the 11 early identity scalars ride the command line.
   bool fingerprint_enabled = false;
 };

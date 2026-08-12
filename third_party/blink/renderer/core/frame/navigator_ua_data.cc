@@ -155,8 +155,6 @@ ScriptPromise<UADataValues> NavigatorUAData::getHighEntropyValues(
 
   // If the "ch-ua-high-entropy-values" permission policy is enabled for a
   // document, add high-entropy client hints to values (if requested)
-  // Tanya810 Phase C: surfaces.navigator.userAgentData overrides for the
-  // high-entropy hints (architecture/model/bitness).
   const auto tanya_ua = [](const char* key) -> std::optional<String> {
     const auto& tp = fingerprint::FingerprintPolicy::ProcessDefault();
     if (!tp.SurfaceActive("navigator")) {
@@ -180,20 +178,14 @@ ScriptPromise<UADataValues> NavigatorUAData::getHighEntropyValues(
       } else if (hint == "architecture") {
         std::optional<String> v = tanya_ua("architecture");
         values->setArchitecture(v ? *v : architecture_);
-        VLOG(1) << "Tanya810 [navigator] ua.architecture mode="
-                << (v ? "INJECT" : "REAL_FALLBACK");
       } else if (hint == "model") {
         std::optional<String> v = tanya_ua("model");
         values->setModel(v ? *v : model_);
-        VLOG(1) << "Tanya810 [navigator] ua.model mode="
-                << (v ? "INJECT" : "REAL_FALLBACK");
       } else if (hint == "uaFullVersion") {
         values->setUaFullVersion(ua_full_version_);
       } else if (hint == "bitness") {
         std::optional<String> v = tanya_ua("bitness");
         values->setBitness(v ? *v : bitness_);
-        VLOG(1) << "Tanya810 [navigator] ua.bitness mode="
-                << (v ? "INJECT" : "REAL_FALLBACK");
       } else if (hint == "fullVersionList") {
         values->setFullVersionList(full_version_list_);
       } else if (hint == "wow64") {

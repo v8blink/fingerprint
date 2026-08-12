@@ -366,7 +366,6 @@ static bool ColorIndexMediaFeatureEval(const MediaQueryExpValue& value,
          CompareValue(0, ClampTo<int>(number), op);
 }
 
-// Tanya810 Phase C: returns surfaces.cssMedia.matchMediaCSS[feature] or nullopt.
 static std::optional<std::string> TanyaCssMedia(const char* feature) {
   const auto& p = fingerprint::FingerprintPolicy::ProcessDefault();
   if (!p.SurfaceActive("cssMedia")) {
@@ -403,7 +402,6 @@ static bool MonochromeMediaFeatureEval(const MediaQueryExpValue& value,
     if (base::StringToInt(*v, &n)) {
       bits_per_component = n;
     }
-    VLOG(1) << "Tanya810 [cssMedia] monochrome mode=INJECT val=" << *v;
   }
   if (value.IsValid()) {
     return NumberValue(value, number, media_values) &&
@@ -440,7 +438,6 @@ static bool DisplayModeMediaFeatureEval(const MediaQueryExpValue& value,
     } else if (*v == "browser") {
       mode = mojom::blink::DisplayMode::kBrowser;
     }
-    VLOG(1) << "Tanya810 [cssMedia] display-mode mode=INJECT val=" << *v;
   }
 
   switch (value.Id()) {
@@ -520,7 +517,6 @@ static bool OrientationMediaFeatureEval(const MediaQueryExpValue& value,
                                         MediaQueryOperator,
                                         const MediaValues& media_values) {
   if (std::optional<std::string> v = TanyaCssMedia("orientation")) {
-    VLOG(1) << "Tanya810 [cssMedia] orientation mode=INJECT val=" << *v;
     if (value.IsId()) {
       return (value.Id() == CSSValueID::kLandscape && *v == "landscape") ||
              (value.Id() == CSSValueID::kPortrait && *v == "portrait");
@@ -995,7 +991,6 @@ static bool HoverMediaFeatureEval(const MediaQueryExpValue& value,
   HoverType hover = media_values.PrimaryHoverType();
   if (std::optional<std::string> v = TanyaCssMedia("hover")) {
     hover = (*v == "hover") ? HoverType::kHoverHoverType : HoverType::kHoverNone;
-    VLOG(1) << "Tanya810 [cssMedia] hover mode=INJECT val=" << *v;
   }
 
   if (!value.IsValid()) {
@@ -1019,7 +1014,6 @@ static bool AnyHoverMediaFeatureEval(const MediaQueryExpValue& value,
     available_hover_types =
         (*v == "hover") ? static_cast<int>(HoverType::kHoverHoverType)
                         : static_cast<int>(HoverType::kHoverNone);
-    VLOG(1) << "Tanya810 [cssMedia] any-hover mode=INJECT val=" << *v;
   }
 
   if (!value.IsValid()) {
@@ -1062,7 +1056,6 @@ static bool PointerMediaFeatureEval(const MediaQueryExpValue& value,
     } else if (*v == "none") {
       pointer = PointerType::kPointerNone;
     }
-    VLOG(1) << "Tanya810 [cssMedia] pointer mode=INJECT val=" << *v;
   }
 
   if (!value.IsValid()) {
@@ -1089,15 +1082,12 @@ static bool PrefersReducedMotionMediaFeatureEval(
                     WebFeature::kPrefersReducedMotionMediaFeature);
 
   bool reduced = media_values.PrefersReducedMotion();
-  // Tanya810 Phase C: replay cssMedia.matchMediaCSS["prefers-reduced-motion"].
   const auto& tp = fingerprint::FingerprintPolicy::ProcessDefault();
   if (tp.SurfaceActive("cssMedia")) {
     if (const base::DictValue* mm =
             tp.GetSurfaceDict("cssMedia", "matchMediaCSS")) {
       if (const std::string* s = mm->FindString("prefers-reduced-motion")) {
         reduced = (*s == "reduce");
-        VLOG(1) << "Tanya810 [cssMedia] prefers-reduced-motion mode=INJECT val="
-                << *s;
       }
     }
   }
@@ -1165,7 +1155,6 @@ static bool AnyPointerMediaFeatureEval(const MediaQueryExpValue& value,
     } else {
       available_pointers = static_cast<int>(PointerType::kPointerNone);
     }
-    VLOG(1) << "Tanya810 [cssMedia] any-pointer mode=INJECT val=" << *v;
   }
 
   if (!value.IsValid()) {
@@ -1217,7 +1206,6 @@ static bool ColorGamutMediaFeatureEval(const MediaQueryExpValue& value,
                                        MediaQueryOperator,
                                        const MediaValues& media_values) {
   if (std::optional<std::string> v = TanyaCssMedia("color-gamut")) {
-    VLOG(1) << "Tanya810 [cssMedia] color-gamut mode=INJECT val=" << *v;
     if (!value.IsValid()) {
       return true;
     }
@@ -1277,7 +1265,6 @@ static bool PrefersColorSchemeMediaFeatureEval(
 
   auto preferred_scheme = media_values.GetPreferredColorScheme();
 
-  // Tanya810 Phase C: replay surfaces.cssMedia.matchMediaCSS["prefers-color-scheme"].
   const auto& tp = fingerprint::FingerprintPolicy::ProcessDefault();
   if (tp.SurfaceActive("cssMedia")) {
     if (const base::DictValue* mm =
@@ -1288,8 +1275,6 @@ static bool PrefersColorSchemeMediaFeatureEval(
         } else if (*s == "light") {
           preferred_scheme = mojom::blink::PreferredColorScheme::kLight;
         }
-        VLOG(1) << "Tanya810 [cssMedia] prefers-color-scheme mode=INJECT val="
-                << *s;
       }
     }
   }
@@ -1349,7 +1334,6 @@ static bool ForcedColorsMediaFeatureEval(const MediaQueryExpValue& value,
   if (std::optional<std::string> v = TanyaCssMedia("forced-colors")) {
     forced_colors =
         (*v == "active") ? ForcedColors::kActive : ForcedColors::kNone;
-    VLOG(1) << "Tanya810 [cssMedia] forced-colors mode=INJECT val=" << *v;
   }
 
   if (!value.IsValid()) {

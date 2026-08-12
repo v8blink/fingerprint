@@ -1063,7 +1063,6 @@ HTMLMediaElement::NetworkState HTMLMediaElement::getNetworkState() const {
 
 V8CanPlayTypeResult HTMLMediaElement::canPlayType(
     const String& mime_type) const {
-  // Tanya810 Phase C: surfaces.media.mimeTypes has -> inject canPlayType.
   const auto& tp = fingerprint::FingerprintPolicy::ProcessDefault();
   if (tp.SurfaceActive("media")) {
     if (const base::ListValue* list =
@@ -1081,8 +1080,6 @@ V8CanPlayTypeResult HTMLMediaElement::canPlayType(
         }
         const std::string* r =
             d->FindString(is_video ? "videoPlayType" : "audioPlayType");
-        VLOG(1) << "Tanya810 [media] canPlayType mode=INJECT mt=" << mt
-                << " r=" << (r ? *r : std::string());
         if (r && *r == "probably") {
           return V8CanPlayTypeResult(V8CanPlayTypeResult::Enum::kProbably);
         }
@@ -1092,7 +1089,6 @@ V8CanPlayTypeResult HTMLMediaElement::canPlayType(
         return V8CanPlayTypeResult(V8CanPlayTypeResult::Enum::k);
       }
     }
-    VLOG(1) << "Tanya810 [media] canPlayType mode=REAL_FALLBACK";
   }
 
   MIMETypeRegistry::SupportsType support =

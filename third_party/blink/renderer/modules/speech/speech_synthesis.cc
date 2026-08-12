@@ -98,8 +98,6 @@ void SpeechSynthesis::OnSetVoiceList(
 }
 
 const HeapVector<Member<SpeechSynthesisVoice>>& SpeechSynthesis::getVoices() {
-  // Tanya810 Phase C: surfaces.voices has -> inject a synthetic voice list built
-  // from the profile (local + remote names, default flag). Reuses voice_list_.
   const auto& tp = fingerprint::FingerprintPolicy::ProcessDefault();
   if (tp.SurfaceActive("voices")) {
     const base::ListValue* local = tp.GetSurfaceList("voices", "local");
@@ -133,14 +131,11 @@ const HeapVector<Member<SpeechSynthesisVoice>>& SpeechSynthesis::getVoices() {
       };
       add(local, /*is_local=*/true);
       add(remote, /*is_local=*/false);
-      VLOG(1) << "Tanya810 [voices] getVoices mode=INJECT count="
-              << voice_list_.size();
       return voice_list_;
     }
   }
   // Kick off initialization here to ensure voice list gets populated.
   std::ignore = TryEnsureMojomSynthesis();
-  VLOG(1) << "Tanya810 [voices] getVoices mode=REAL_FALLBACK";
   return voice_list_;
 }
 

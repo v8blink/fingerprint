@@ -2568,10 +2568,6 @@ void RTCPeerConnection::NegotiationNeeded() {
 
 namespace {
 
-// Tanya810 Phase A: "has -> inject user value, absent -> real value".
-// When webrtc_public_ip is present in the profile, rewrite the
-// connection-address token of the locally generated ICE candidate; otherwise
-// return the candidate untouched.
 RTCIceCandidatePlatform* TanyaMaybeOverrideCandidateIp(
     RTCIceCandidatePlatform* candidate) {
   const fingerprint::FingerprintPolicy& policy =
@@ -2579,13 +2575,10 @@ RTCIceCandidatePlatform* TanyaMaybeOverrideCandidateIp(
   const std::string& ip = policy.webrtc_public_ip();
   if (!policy.enabled() || ip.empty() || policy.IsSurfaceDisabled("webrtc") ||
       candidate->Candidate().empty()) {
-    VLOG(1) << "Tanya810 [webrtc] candidate mode=REAL_FALLBACK";
     return candidate;
   }
   Vector<String> tokens = candidate->Candidate().Split(' ');
-  // candidate:<foundation> <component> <transport> <priority> <address> ...
   if (tokens.size() < 6) {
-    VLOG(1) << "Tanya810 [webrtc] candidate mode=REAL_FALLBACK reason=format";
     return candidate;
   }
   tokens[4] = String::FromUtf8(ip);
@@ -2596,13 +2589,12 @@ RTCIceCandidatePlatform* TanyaMaybeOverrideCandidateIp(
     }
     rewritten.Append(tokens[i]);
   }
-  VLOG(1) << "Tanya810 [webrtc] candidate mode=INJECT ip=" << ip;
   return MakeGarbageCollected<RTCIceCandidatePlatform>(
       rewritten.ToString(), candidate->SdpMid(), candidate->SdpMLineIndex(),
       candidate->UsernameFragment(), candidate->Url());
 }
 
-}  // namespace
+}
 
 void RTCPeerConnection::DidGenerateICECandidate(
     RTCIceCandidatePlatform* platform_candidate) {

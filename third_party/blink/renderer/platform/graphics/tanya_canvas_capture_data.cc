@@ -13,11 +13,6 @@ void TanyaReplaceCanvasPixels(void* pixels,
                               int x_offset,
                               int y_offset,
                               const String& key) {
-  // Tanya810 Phase C: content-addressed canvas2d replay. `key` is
-  // "{width}_{height}_{willReadFrequently}_{text}" built at the readback site;
-  // it selects one of the 5 stored RGBA arrays under
-  // surfaces.canvas2d.pixelsByKey. Absent key / miss / size or colorType
-  // mismatch -> leave the real pixels untouched (REAL_FALLBACK).
   if (!pixels || key.empty()) {
     return;
   }
@@ -28,21 +23,19 @@ void TanyaReplaceCanvasPixels(void* pixels,
   }
   const base::ListValue* raw = policy.GetCanvas2dPixelsByKey(key.Utf8());
   if (!raw) {
-    VLOG(1) << "Tanya810 [canvas2d] REAL_FALLBACK miss key=" << key;
     return;
   }
   const size_t byte_size = info.computeByteSize(info.minRowBytes());
   if (SkImageInfo::ByteSizeOverflowed(byte_size) || raw->size() != byte_size) {
-    VLOG(1) << "Tanya810 [canvas2d] REAL_FALLBACK size key=" << key;
     return;
   }
   const SkColorType ct = info.colorType();
   uint8_t* out = static_cast<uint8_t*>(pixels);
-  if (ct == kRGBA_8888_SkColorType) {  // e.g. getImageData buffer
+  if (ct == kRGBA_8888_SkColorType) {
     for (size_t i = 0; i < raw->size(); ++i) {
       out[i] = static_cast<uint8_t>((*raw)[i].GetIfInt().value_or(0) & 0xFF);
     }
-  } else if (ct == kBGRA_8888_SkColorType) {  // e.g. toDataURL snapshot (Win)
+  } else if (ct == kBGRA_8888_SkColorType) {
     for (size_t p = 0; p + 3 < raw->size(); p += 4) {
       const int r = (*raw)[p].GetIfInt().value_or(0);
       const int g = (*raw)[p + 1].GetIfInt().value_or(0);
@@ -54,11 +47,8 @@ void TanyaReplaceCanvasPixels(void* pixels,
       out[p + 3] = static_cast<uint8_t>(a & 0xFF);
     }
   } else {
-    VLOG(1) << "Tanya810 [canvas2d] REAL_FALLBACK colortype key=" << key;
     return;
   }
-  VLOG(1) << "Tanya810 [canvas2d] INJECT key=" << key
-          << " bytes=" << raw->size() << " ct=" << ct;
 }
 
-}  // namespace blink
+}

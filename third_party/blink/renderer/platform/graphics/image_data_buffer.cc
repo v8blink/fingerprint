@@ -67,7 +67,7 @@ SkPixmap MaybeReplacePixmap(const SkPixmap& src,
   return copy;
 }
 
-}  // namespace
+}
 
 ImageDataBuffer::ImageDataBuffer(scoped_refptr<StaticBitmapImage> image) {
   if (!image)

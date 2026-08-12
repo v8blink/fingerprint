@@ -279,9 +279,8 @@ bool IsMainFrameWithDocument(content::RenderFrame* frame) {
   return !doc.IsNull();
 }
 
-}  // namespace
+}
 
-// static
 void VersionShimRendererExtension::Create(content::RenderFrame* frame) {
   new VersionShimRendererExtension(frame);
 }
@@ -351,4 +350,4 @@ void VersionShimRendererExtension::RunShim(v8::Local<v8::Context> v8_context) {
   frame->ExecuteScript(source);
 }
 
-}  // namespace tanya_fingerprint
+}

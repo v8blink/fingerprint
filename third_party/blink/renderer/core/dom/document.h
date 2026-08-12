@@ -148,7 +148,7 @@ class ColorProvider;
 
 namespace fingerprint {
 class FingerprintPolicy;
-}  // namespace fingerprint
+}
 
 namespace blink {
 

@@ -25,6 +25,6 @@ class VersionShimRendererExtension : public content::RenderFrameObserver {
   void RunShim(v8::Local<v8::Context> v8_context);
 };
 
-}  // namespace tanya_fingerprint
+}
 
-#endif  // CHROME_RENDERER_TANYA_FINGERPRINT_VERSION_SHIM_RENDERER_EXTENSION_H_
+#endif

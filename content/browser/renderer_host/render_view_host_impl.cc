@@ -913,15 +913,10 @@ void RenderViewHostImpl::SendRendererPreferencesToRenderer(
       will_send_renderer_preferences_callback_for_testing_.Run(preferences);
     broadcast->UpdateRendererPreferences(preferences);
 
-    // Tanya810 Phase A: deliver this tab's full structured fingerprint profile
-    // out-of-band as a BigBuffer (transparently shared memory > 64KB). It rides
-    // the same per-view PageBroadcast channel as renderer preferences, so it is
-    // re-delivered automatically when the renderer/view is rebuilt.
     std::string profile_json =
         delegate_ ? delegate_->GetTanyaFingerprintProfileJson() : std::string();
     if (!profile_json.empty()) {
       base::span<const uint8_t> bytes = base::as_byte_span(profile_json);
-      VLOG(1) << "Tanya810 [ipc-B] push bytes=" << bytes.size();
       broadcast->UpdateTanyaFingerprintProfile(mojo_base::BigBuffer(bytes));
     }
   }

@@ -3382,12 +3382,8 @@ DOMRectList* Element::getClientRects() {
                 static_cast<float>(d->FindDouble("y").value_or(0)),
                 static_cast<float>(d->FindDouble("width").value_or(0)),
                 static_cast<float>(d->FindDouble("height").value_or(0)));
-            VLOG(1) << "Tanya810 [clientRects] getClientRects mode=INJECT idx="
-                    << tanya_idx;
             return MakeGarbageCollected<DOMRectList>(injected);
           }
-          VLOG(1) << "Tanya810 [clientRects] getClientRects mode=REAL_FALLBACK"
-                  << " found=" << tanya_found;
         }
       }
     }
@@ -3476,16 +3472,12 @@ DOMRect* Element::GetBoundingClientRect() {
               tanya_found ? (*arr)[tanya_idx % arr->size()].GetIfDict()
                           : nullptr;
           if (d) {
-            VLOG(1) << "Tanya810 [clientRects] getBoundingClientRect mode=INJECT idx="
-                    << tanya_idx;
             return DOMRect::FromRectF(gfx::RectF(
                 static_cast<float>(d->FindDouble("x").value_or(0)),
                 static_cast<float>(d->FindDouble("y").value_or(0)),
                 static_cast<float>(d->FindDouble("width").value_or(0)),
                 static_cast<float>(d->FindDouble("height").value_or(0))));
           }
-          VLOG(1) << "Tanya810 [clientRects] getBoundingClientRect mode=REAL_FALLBACK"
-                  << " found=" << tanya_found;
         }
       }
     }

@@ -1295,7 +1295,7 @@ String HTMLCanvasElement::ToDataURLInternal(
     if (!data_buffer)
       return String("data:,");
 
-    String tanya_key;  // empty => no injection
+    String tanya_key;
     const fingerprint::FingerprintPolicy& tanya_policy =
         GetDocument().GetFingerprintPolicy();
     if (tanya_policy.enabled() && tanya_policy.SurfaceActive("canvas2d") &&

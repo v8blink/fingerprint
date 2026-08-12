@@ -226,24 +226,18 @@ void AudioBuffer::MaybeInjectTanyaBins() {
   }
   if (length() != 5000 || numberOfChannels() != 1 ||
       sampleRate() != 44100.0f || channels_.empty()) {
-    VLOG(1) << "Tanya810 [offlineAudioContext] renderedBuffer mode=SKIP len="
-            << length() << " ch=" << numberOfChannels()
-            << " rate=" << sampleRate();
     return;
   }
   const base::ListValue* d =
       tp.GetSurfaceList("offlineAudioContext", "binsFull");
   DOMFloat32Array* ch = channels_[0].Get();
   if (!d || !ch || d->size() != ch->length()) {
-    VLOG(1) << "Tanya810 [offlineAudioContext] renderedBuffer mode=REAL_FALLBACK";
     return;
   }
   float* out = ch->Data();
   for (size_t i = 0; i < d->size(); ++i) {
     out[i] = static_cast<float>((*d)[i].GetIfDouble().value_or(0));
   }
-  VLOG(1) << "Tanya810 [offlineAudioContext] renderedBuffer mode=INJECT n="
-          << d->size();
 }
 
 NotShared<DOMFloat32Array> AudioBuffer::getChannelData(unsigned channel_index) {

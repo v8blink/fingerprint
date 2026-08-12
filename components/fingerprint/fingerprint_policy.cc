@@ -110,8 +110,6 @@ FingerprintPolicy FingerprintPolicy::FromProfileJson(
   std::optional<base::Value> parsed =
       base::JSONReader::Read(json, base::JSON_PARSE_RFC);
   if (!parsed || !parsed->is_dict()) {
-    VLOG(1) << "Tanya810 [policy] FromProfileJson parse_failed bytes="
-            << bytes.size();
     return p;
   }
   const base::DictValue& dict = parsed->GetDict();
@@ -139,9 +137,6 @@ FingerprintPolicy FingerprintPolicy::FromProfileJson(
     surface_count = surfaces->size();
     p.surfaces_ = std::make_shared<const base::DictValue>(surfaces->Clone());
   }
-  VLOG(1) << "Tanya810 [policy] FromProfileJson parse_ok bytes=" << bytes.size()
-          << " surfaces=" << surface_count << " platform=" << p.platform_
-          << " screen=" << p.screen_;
   return p;
 }
 

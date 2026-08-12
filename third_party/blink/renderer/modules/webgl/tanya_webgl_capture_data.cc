@@ -28,7 +28,7 @@ std::string SlugifyDeviceModel(const std::string& model) {
   return out;
 }
 
-}  // namespace
+}
 
 const TanyaWebGLCaptureDevice* const kTanyaWebGLCaptureDevices = kEmptyDevices;
 const size_t kTanyaWebGLCaptureDeviceCount = 0u;
@@ -80,4 +80,4 @@ const TanyaWebGLCaptureEntry* FindTanyaWebGLCapture(
   return nullptr;
 }
 
-}  // namespace blink
+}

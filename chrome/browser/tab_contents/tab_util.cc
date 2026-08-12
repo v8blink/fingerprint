@@ -38,7 +38,7 @@ class TanyaInitialStoragePartitionUserData
   std::string partition_id_;
 };
 
-}  // namespace
+}
 
 namespace tab_util {
 

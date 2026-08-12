@@ -291,8 +291,6 @@ struct BLINK_COMMON_EXPORT
     return data.view_source_line_wrap_enabled;
   }
 
-  // Tanya810 Phase A: only the enable flag remains; the 11 flat fingerprint_*
-  // getters were removed (full profile now travels via a BigBuffer).
   static const bool& fingerprint_enabled(
       const ::blink::RendererPreferences& data) {
     return data.fingerprint_enabled;

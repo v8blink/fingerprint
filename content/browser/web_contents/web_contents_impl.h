@@ -2493,9 +2493,6 @@ class CONTENT_EXPORT WebContentsImpl
   // Settings that get passed to the renderer process.
   blink::RendererPreferences renderer_preferences_;
 
-  // Tanya810 Phase A: this tab's serialized fingerprint profile JSON, pushed to
-  // the renderer as a BigBuffer via PageBroadcast. Empty when the tab has no
-  // fingerprint profile.
   std::string tanya_fingerprint_profile_json_;
 
   // The time ticks that this WebContents was last made active. The initial

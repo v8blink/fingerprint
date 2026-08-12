@@ -1697,7 +1697,6 @@ DOMRectList* Range::getClientRects() const {
                 static_cast<float>(d->FindDouble("y").value_or(0)),
                 static_cast<float>(d->FindDouble("width").value_or(0)),
                 static_cast<float>(d->FindDouble("height").value_or(0)));
-            VLOG(1) << "Tanya810 [clientRects] Range::getClientRects mode=INJECT";
             return MakeGarbageCollected<DOMRectList>(injected);
           }
         }
@@ -1728,7 +1727,6 @@ DOMRect* Range::getBoundingClientRect() const {
           const base::DictValue* d = (*arr)[idx % arr->size()].GetIfDict();
           ++idx;
           if (d) {
-            VLOG(1) << "Tanya810 [clientRects] Range::getBoundingClientRect mode=INJECT";
             return DOMRect::FromRectF(gfx::RectF(
                 static_cast<float>(d->FindDouble("x").value_or(0)),
                 static_cast<float>(d->FindDouble("y").value_or(0)),

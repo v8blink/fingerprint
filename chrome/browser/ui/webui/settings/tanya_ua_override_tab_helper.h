@@ -7,7 +7,7 @@
 namespace content {
 class NavigationHandle;
 class WebContents;
-}  // namespace content
+}
 
 namespace settings {
 
@@ -32,6 +32,6 @@ class TanyaUaOverrideTabHelper
   WEB_CONTENTS_USER_DATA_KEY_DECL();
 };
 
-}  // namespace settings
+}
 
-#endif  // CHROME_BROWSER_UI_WEBUI_SETTINGS_TANYA_UA_OVERRIDE_TAB_HELPER_H_
+#endif

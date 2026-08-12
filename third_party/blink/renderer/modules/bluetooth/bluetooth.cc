@@ -320,15 +320,12 @@ ScriptPromise<IDLBoolean> Bluetooth::getAvailability(
     ExceptionState& exception_state) {
   LocalDOMWindow* window = GetSupplementable()->DomWindow();
 
-  // Tanya810 Phase C: replay surfaces.navigator.bluetoothAvailability (bool).
   {
     const auto& tp = fingerprint::FingerprintPolicy::ProcessDefault();
     if (tp.SurfaceActive("navigator")) {
       if (const base::Value* v =
               tp.SurfaceValue("navigator", "bluetoothAvailability")) {
         if (std::optional<bool> b = v->GetIfBool()) {
-          VLOG(1) << "Tanya810 [navigator] bluetoothAvailability mode=INJECT val="
-                  << *b;
           return ToResolvedPromise<IDLBoolean>(script_state, *b);
         }
       }

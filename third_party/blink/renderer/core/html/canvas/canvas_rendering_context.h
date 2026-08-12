@@ -268,9 +268,6 @@ class CORE_EXPORT CanvasRenderingContext
                               const ComputedStyle& new_style) {}
   virtual void LangAttributeChanged() {}
   virtual String GetIdFromControl(const Element* element) { return String(); }
-  // Tanya810: text drawn on this context since the last clear/reset. The 2D
-  // context overrides this; empty for other context types. Used to build the
-  // canvas2d content-address key at toDataURL time.
   virtual String TanyaDrawnText() const { return String(); }
   virtual int LayerCount() const { return 0; }
   virtual scoped_refptr<const cc::AnimatedImageFrameIndexMap>

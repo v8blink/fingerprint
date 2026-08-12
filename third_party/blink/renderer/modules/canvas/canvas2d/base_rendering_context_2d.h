@@ -94,8 +94,6 @@ class MODULES_EXPORT BaseRenderingContext2D : public CanvasRenderingContext,
 
   void ResetInternal() override;
 
-  // Tanya810: expose the drawn-text accumulator (stored on
-  // Canvas2DRecorderContext) through the core CanvasRenderingContext interface.
   String TanyaDrawnText() const override { return tanya_drawn_text_; }
 
   CanvasRenderingContext2DSettings* getContextAttributes() const;

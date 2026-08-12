@@ -393,7 +393,6 @@ void MediaRecorder::requestData(ExceptionState& exception_state) {
 
 bool MediaRecorder::isTypeSupported(ExecutionContext* context,
                                     const String& type) {
-  // Tanya810 Phase C: replay surfaces.media.mimeTypes[type].mediaRecorder.
   const auto& tp = fingerprint::FingerprintPolicy::ProcessDefault();
   if (tp.SurfaceActive("media")) {
     if (const base::ListValue* list =
@@ -409,8 +408,6 @@ bool MediaRecorder::isTypeSupported(ExecutionContext* context,
           continue;
         }
         const bool r = d->FindBool("mediaRecorder").value_or(false);
-        VLOG(1) << "Tanya810 [media] MediaRecorder.isTypeSupported mode=INJECT"
-                << " mt=" << mt << " r=" << r;
         return r;
       }
     }

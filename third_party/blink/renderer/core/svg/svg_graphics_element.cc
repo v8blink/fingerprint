@@ -266,7 +266,6 @@ gfx::RectF SVGGraphicsElement::GetBBox() {
 }
 
 SVGRectTearOff* SVGGraphicsElement::getBBoxFromJavascript() {
-  // Tanya810 Phase C: replay surfaces.svg.bBox = {x,y,width,height} if provided.
   const auto& tp = fingerprint::FingerprintPolicy::ProcessDefault();
   if (tp.SurfaceActive("svg")) {
     if (const base::DictValue* r = tp.GetSurfaceDict("svg", "bBoxFull")) {
@@ -274,11 +273,9 @@ SVGRectTearOff* SVGGraphicsElement::getBBoxFromJavascript() {
                       static_cast<float>(r->FindDouble("y").value_or(0)),
                       static_cast<float>(r->FindDouble("width").value_or(0)),
                       static_cast<float>(r->FindDouble("height").value_or(0)));
-      VLOG(1) << "Tanya810 [svg] getBBox mode=INJECT";
       return SVGRectTearOff::CreateDetached(rect);
     }
   }
-  VLOG(1) << "Tanya810 [svg] getBBox mode=REAL_FALLBACK";
 
   GetDocument().UpdateStyleAndLayoutForNode(this,
                                             DocumentUpdateReason::kJavaScript);

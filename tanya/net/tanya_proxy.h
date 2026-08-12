@@ -31,6 +31,6 @@ struct TanyaProxy {
   }
 };
 
-}  // namespace net
+}
 
 #endif

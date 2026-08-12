@@ -63,8 +63,6 @@ DOMPlugin* MakeFakePlugin(String plugin_name, LocalDOMWindow* window) {
 }  // namespace
 
 DOMPluginArray::DOMPluginArray(LocalDOMWindow* window) : window_(window) {
-  // Tanya810 Phase C: replay surfaces.navigator.plugins = [{name,description,
-  // filename}] when provided; otherwise the spec'd hard-coded list.
   const auto& tp = fingerprint::FingerprintPolicy::ProcessDefault();
   if (tp.SurfaceActive("navigator")) {
     if (const base::ListValue* list =
@@ -85,8 +83,6 @@ DOMPluginArray::DOMPluginArray(LocalDOMWindow* window) : window_(window) {
             String::FromUtf8(desc ? *desc : std::string()),
             String::FromUtf8(file ? *file : std::string()), window));
       }
-      VLOG(1) << "Tanya810 [navigator] plugins mode=INJECT count="
-              << dom_plugins_.size();
       return;
     }
   }

@@ -2935,9 +2935,6 @@ void ChromeContentBrowserClient::AppendExtraCommandLineSwitches(
   command_line->CopySwitchesFrom(browser_command_line,
                                  kDinosaurEasterEggSwitches);
 
-  // Phase A: only the 11 "early identity scalars" (plus the enable/index
-  // switch) are propagated to child processes on the command line. screen and
-  // webrtc_public_ip now travel inside the structured mojo profile.
   static const char* const kFingerprintSwitches[] = {
       fingerprint::kFingerprint,
       fingerprint::kFingerprintPlatform,
@@ -2953,8 +2950,6 @@ void ChromeContentBrowserClient::AppendExtraCommandLineSwitches(
       fingerprint::kFingerprintLanguages,
   };
   command_line->CopySwitchesFrom(browser_command_line, kFingerprintSwitches);
-  VLOG(1) << "Tanya810 [cmdline] copy_to_child type=" << process_type
-          << " fingerprint_scalars=11";
 
 #if BUILDFLAG(IS_CHROMEOS)
   // On Chrome OS need to pass primary user homedir (in multi-profiles session).

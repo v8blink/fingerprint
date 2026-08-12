@@ -100,8 +100,6 @@ struct BLINK_COMMON_EXPORT RendererPreferences {
   int autofill_shortcut_modifiers = 0;
   std::string autofill_trigger_string;
 
-  // Tanya810 Phase A: only the enable flag remains; the 11 flat fingerprint_*
-  // fields were removed (full profile now travels via a BigBuffer).
   bool fingerprint_enabled{false};
 
   RendererPreferences();

@@ -177,10 +177,8 @@ float DynamicsCompressorNode::reduction() const {
   if (tp.SurfaceActive("offlineAudioContext")) {
     if (auto v =
             tp.GetSurfaceDouble("offlineAudioContext", "compressorGainReduction")) {
-      VLOG(1) << "Tanya810 [offlineAudioContext] reduction mode=INJECT val=" << *v;
       return static_cast<float>(*v);
     }
-    VLOG(1) << "Tanya810 [offlineAudioContext] reduction mode=REAL_FALLBACK";
   }
   return GetDynamicsCompressorHandler().ReductionValue();
 }

@@ -524,7 +524,6 @@ bool MediaSource::IsUpdating() const {
 // static
 bool MediaSource::isTypeSupported(ExecutionContext* context,
                                   const String& type) {
-  // Tanya810 Phase C: replay surfaces.media.mimeTypes[type].mediaSource.
   const auto& tp = fingerprint::FingerprintPolicy::ProcessDefault();
   if (tp.SurfaceActive("media")) {
     if (const base::ListValue* list =
@@ -540,8 +539,6 @@ bool MediaSource::isTypeSupported(ExecutionContext* context,
           continue;
         }
         const bool r = d->FindBool("mediaSource").value_or(false);
-        VLOG(1) << "Tanya810 [media] MediaSource.isTypeSupported mode=INJECT mt="
-                << mt << " r=" << r;
         return r;
       }
     }

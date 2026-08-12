@@ -399,7 +399,7 @@ bool BuildUaFromPolicy(const fingerprint::FingerprintPolicy& policy,
   return true;
 }
 
-}  // namespace
+}
 
 String WorkerGlobalScope::UserAgent() const {
   const fingerprint::FingerprintPolicy& policy =

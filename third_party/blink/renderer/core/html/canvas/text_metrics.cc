@@ -680,7 +680,7 @@ const TanyaTextMetricEntry* FindTanyaTextMetric(const std::string& device_model,
   return nullptr;
 }
 
-}  // namespace
+}
 
 void TextMetrics::ApplyTanyaMetrics(const std::string& device_model) {
   const TanyaTextMetricEntry* entry = FindTanyaTextMetric(device_model, text_);

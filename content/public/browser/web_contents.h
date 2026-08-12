@@ -1271,9 +1271,6 @@ class WebContents : public PageNavigator, public base::SupportsUserData {
   // Returns the settings which get passed to the renderer.
   virtual blink::RendererPreferences* GetMutableRendererPrefs() = 0;
 
-  // Tanya810 Phase A: stores this tab's serialized fingerprint profile JSON so
-  // RenderViewHostImpl can push it to the renderer as a BigBuffer. Non-pure with
-  // an empty default so unrelated WebContents implementations are unaffected.
   virtual void SetTanyaFingerprintProfileJson(std::string json) {}
 
   // Tells the tab to close now. The tab will take care not to close until it's

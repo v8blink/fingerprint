@@ -22,4 +22,4 @@ void TanyaUaOverrideTabHelper::DidStartNavigation(
 
 WEB_CONTENTS_USER_DATA_KEY_IMPL(TanyaUaOverrideTabHelper);
 
-}  // namespace settings
+}

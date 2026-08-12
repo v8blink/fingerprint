@@ -1587,14 +1587,7 @@ void ChromeClientImpl::OnFirstContentfulPaint(const base::TimeDelta& duration) {
 
 const fingerprint::FingerprintPolicy& ChromeClientImpl::GetFingerprintPolicy()
     const {
-  // Tanya810 Phase A: the full structured fingerprint profile is parsed from
-  // the BigBuffer in WebViewImpl::UpdateTanyaFingerprintProfile and installed
-  // eagerly as the process default (SetProcessDefaultForRenderer). The 11 flat
-  // fingerprint_* RendererPreferences fields were removed, so Document
-  // consumers simply read the process default here.
   if (web_view_) {
-    VLOG(1) << "Tanya810 [policy] GetFingerprintPolicy enabled="
-            << web_view_->GetRendererPreferences().fingerprint_enabled;
   }
   return fingerprint::FingerprintPolicy::ProcessDefault();
 }

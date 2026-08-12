@@ -44,13 +44,10 @@
 namespace blink {
 
 int32_t NavigatorEvents::maxTouchPoints(Navigator& navigator) {
-  // Tanya810 Phase C: replay surfaces.navigator.maxTouchPoints.
   const auto& tp = fingerprint::FingerprintPolicy::ProcessDefault();
   if (std::optional<int> v = tp.GetSurfaceInt("navigator", "maxTouchPoints")) {
-    VLOG(1) << "Tanya810 [navigator] maxTouchPoints mode=INJECT val=" << *v;
     return static_cast<int32_t>(*v);
   }
-  VLOG(1) << "Tanya810 [navigator] maxTouchPoints mode=REAL_FALLBACK";
   LocalDOMWindow* window = navigator.DomWindow();
   return window ? window->GetFrame()->GetSettings()->GetMaxTouchPoints() : 0;
 }

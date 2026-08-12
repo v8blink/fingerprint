@@ -95,9 +95,6 @@ class RenderViewHostDelegate {
   virtual const blink::web_pref::WebPreferences& GetOrCreateWebPreferences(
       RenderViewHostImpl* render_view_host) = 0;
 
-  // Tanya810 Phase A: returns this tab's serialized fingerprint profile JSON,
-  // pushed to the renderer as a BigBuffer by RenderViewHostImpl. Empty means no
-  // profile for this tab (default).
   virtual std::string GetTanyaFingerprintProfileJson();
 
   // Sets the WebPreferences for the WebContents associated with this

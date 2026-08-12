@@ -3763,7 +3763,6 @@ const RendererPreferences& WebViewImpl::GetRendererPreferences() const {
 
 void WebViewImpl::UpdateTanyaFingerprintProfile(mojo_base::BigBuffer profile) {
   base::span<const uint8_t> bytes(profile.data(), profile.size());
-  VLOG(1) << "Tanya810 [ipc-B] recv bytes=" << bytes.size();
   fingerprint::FingerprintPolicy policy =
       fingerprint::FingerprintPolicy::FromProfileJson(bytes);
   const bool enabled = policy.enabled();
@@ -3771,13 +3770,9 @@ void WebViewImpl::UpdateTanyaFingerprintProfile(mojo_base::BigBuffer profile) {
       policy.GetSurfaceString("intl", "locale");
   fingerprint::FingerprintPolicy::SetProcessDefaultForRenderer(
       std::move(policy));
-  VLOG(1) << "Tanya810 [policy] set_process_default from=eager enabled="
-          << enabled;
   if (enabled && intl_locale && !intl_locale->empty()) {
     LocaleController::instance().SetLocaleOverride(
         String::FromUtf8(*intl_locale), false);
-    VLOG(1) << "Tanya810 [intl] SetLocaleOverride mode=INJECT locale="
-            << *intl_locale;
   }
 }
 

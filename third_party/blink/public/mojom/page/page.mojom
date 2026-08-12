@@ -129,11 +129,6 @@ interface PageBroadcast {
   // Updates renderer preferences.
   UpdateRendererPreferences(blink.mojom.RendererPreferences preferences);
 
-  // Tanya810 Phase A: pushes this tab's full structured fingerprint profile
-  // (serialized JSON) to the renderer. Delivered out-of-band from
-  // RendererPreferences because BigBuffer is move-only and transparently uses
-  // shared memory above 64KB (mojo/public/cpp/base/big_buffer.h kMaxInlineBytes).
-  // Sent alongside renderer-preference sync and re-sent on renderer rebuild.
   UpdateTanyaFingerprintProfile(mojo_base.mojom.BigBuffer profile);
 
   // Set history index and length.

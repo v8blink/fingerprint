@@ -280,8 +280,6 @@ void Permissions::TaskComplete(
       resolver->GetExecutionContext()->IsContextDestroyed())
     return;
 
-  // Tanya810 Phase C: replay surfaces.navigator.permissions
-  // {granted:[],prompt:[],denied:[]} by overriding the resolved status.
   if (result && descriptor) {
     const auto& tp = fingerprint::FingerprintPolicy::ProcessDefault();
     if (tp.SurfaceActive("navigator")) {
@@ -317,16 +315,10 @@ void Permissions::TaskComplete(
           };
           if (in_group("granted")) {
             result->status = mojom::blink::PermissionStatus::GRANTED;
-            VLOG(1) << "Tanya810 [navigator] permission mode=INJECT name="
-                    << pname << " granted";
           } else if (in_group("denied")) {
             result->status = mojom::blink::PermissionStatus::DENIED;
-            VLOG(1) << "Tanya810 [navigator] permission mode=INJECT name="
-                    << pname << " denied";
           } else if (in_group("prompt")) {
             result->status = mojom::blink::PermissionStatus::ASK;
-            VLOG(1) << "Tanya810 [navigator] permission mode=INJECT name="
-                    << pname << " prompt";
           }
         }
       }

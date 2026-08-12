@@ -13,6 +13,6 @@ PLATFORM_EXPORT void TanyaReplaceCanvasPixels(void* pixels,
                                               int y_offset,
                                               const String& key);
 
-}  // namespace blink
+}
 
-#endif  // THIRD_PARTY_BLINK_RENDERER_PLATFORM_GRAPHICS_TANYA_CANVAS_CAPTURE_DATA_H_
+#endif

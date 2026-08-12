@@ -33,6 +33,6 @@ class FingerprintHandler : public SettingsPageUIHandler {
   base::WeakPtrFactory<FingerprintHandler> weak_factory_{this};
 };
 
-}  // namespace settings
+}
 
-#endif  // CHROME_BROWSER_UI_WEBUI_SETTINGS_FINGERPRINT_HANDLER_H_
+#endif

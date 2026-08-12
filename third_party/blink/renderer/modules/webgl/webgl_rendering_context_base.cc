@@ -4291,8 +4291,6 @@ ScriptValue WebGLRenderingContextBase::getParameter(ScriptState* script_state,
   if (isContextLost())
     return ScriptValue::CreateNull(script_state->GetIsolate());
 
-  // Tanya810 Phase C: replay common integer params from
-  // surfaces.canvasWebgl.parameters (UNMASKED vendor/renderer handled below).
   {
     const fingerprint::FingerprintPolicy& tp =
         fingerprint::FingerprintPolicy::ProcessDefault();
@@ -4321,8 +4319,6 @@ ScriptValue WebGLRenderingContextBase::getParameter(ScriptState* script_state,
         if (const base::DictValue* params =
                 tp.GetSurfaceDict("canvasWebgl", "parameters")) {
           if (std::optional<int> iv = params->FindInt(key)) {
-            VLOG(1) << "Tanya810 [canvasWebgl] getParameter mode=INJECT key="
-                    << key;
             return WebGLAny(script_state, static_cast<GLint>(*iv));
           }
         }
@@ -4906,12 +4902,9 @@ WebGLRenderingContextBase::getSupportedExtensions() {
           injected.push_back(String::FromUtf8(*s));
         }
       }
-      VLOG(1) << "Tanya810 [canvasWebgl] getSupportedExtensions mode=INJECT key="
-              << tanya_ext_key << " n=" << injected.size();
       return injected;
     }
   }
-  VLOG(1) << "Tanya810 [canvasWebgl] getSupportedExtensions mode=REAL_FALLBACK";
 
   Vector<String> result;
 
@@ -5772,9 +5765,6 @@ bool TanyaReplaceWebGLPixels(const char* context_kind,
                              void* data,
                              size_t data_byte_size,
                              const std::string& device_model) {
-  // Tanya810 Phase C: read the per-tab WebGL pixel capture straight from the
-  // structured profile (surfaces.canvasWebgl.pixelsRaw / pixels2Raw) installed
-  // as the process default, instead of the compiled device_model table.
   const fingerprint::FingerprintPolicy& policy =
       fingerprint::FingerprintPolicy::ProcessDefault();
   const char* key =
@@ -5782,12 +5772,9 @@ bool TanyaReplaceWebGLPixels(const char* context_kind,
                                                               : "pixelsRaw";
   const base::ListValue* raw = policy.GetSurfaceList("canvasWebgl", key);
   if (!raw || raw->empty()) {
-    VLOG(1) << "Tanya810 [replay] webgl readPixels mode=REAL_FALLBACK";
     return false;
   }
   if (raw->size() > data_byte_size) {
-    VLOG(1) << "Tanya810 [replay] webgl readPixels mode=REAL_FALLBACK"
-            << " reason=size raw=" << raw->size() << " buf=" << data_byte_size;
     return false;
   }
   uint8_t* out = static_cast<uint8_t*>(data);
@@ -5795,7 +5782,6 @@ bool TanyaReplaceWebGLPixels(const char* context_kind,
   for (size_t i = 0; i < n; ++i) {
     out[i] = static_cast<uint8_t>((*raw)[i].GetIfInt().value_or(0) & 0xFF);
   }
-  VLOG(1) << "Tanya810 [replay] webgl readPixels mode=INJECT bytes=" << n;
   return true;
 }
 

@@ -217,11 +217,9 @@ bool FontCache::IsPlatformFamilyMatchAvailable(
           n = n.substr(1, n.size() - 2);
         }
         if (n == fam) {
-          VLOG(1) << "Tanya810 [fonts] family mode=INJECT family=" << fam;
           return true;
         }
       }
-      VLOG(1) << "Tanya810 [fonts] family mode=BLOCK family=" << fam;
       return false;
     }
   }
@@ -252,11 +250,9 @@ bool FontCache::IsPlatformFontUniqueNameMatchAvailable(
           n = n.substr(1, n.size() - 2);
         }
         if (n == fam) {
-          VLOG(1) << "Tanya810 [fonts] uniqueName mode=INJECT family=" << fam;
           return true;
         }
       }
-      VLOG(1) << "Tanya810 [fonts] uniqueName mode=BLOCK family=" << fam;
       return false;
     }
   }

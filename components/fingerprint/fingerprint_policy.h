@@ -30,25 +30,17 @@ class COMPONENT_EXPORT(FINGERPRINT) FingerprintPolicy {
 
   static void SetProcessDefaultForRenderer(FingerprintPolicy policy);
 
-  // Phase A: parse a full structured profile (JSON bytes delivered via mojo
-  // BigBuffer) into a policy. Fills the flat identity scalars from the
-  // top-level fields and stores the "surfaces" block for structured access.
   static FingerprintPolicy FromProfileJson(base::span<const uint8_t> bytes);
 
   bool enabled() const { return enabled_; }
 
   bool IsSurfaceDisabled(std::string_view surface) const;
 
-  // Structured "surfaces" access (populated by FromProfileJson). Used by the
-  // per-surface consumers ("has -> inject user value, absent -> real value").
   bool has_surface(std::string_view name) const;
   const base::DictValue* surface(std::string_view name) const;
-  // Returns surfaces[surface_name][key] or nullptr when absent.
   const base::Value* SurfaceValue(std::string_view surface_name,
                                   std::string_view key) const;
 
-  // Phase C C-0 typed helpers over SurfaceValue(). Each returns nullopt/nullptr
-  // when the field is absent or of the wrong type.
   bool SurfaceActive(std::string_view surface_name) const;
   std::optional<std::string> GetSurfaceString(std::string_view surface_name,
                                               std::string_view key) const;
@@ -60,7 +52,6 @@ class COMPONENT_EXPORT(FINGERPRINT) FingerprintPolicy {
                                           std::string_view key) const;
   const base::DictValue* GetSurfaceDict(std::string_view surface_name,
                                           std::string_view key) const;
-  // Canvas2D content-addressed replay: surfaces.canvas2d.pixelsByKey[key].
   const base::ListValue* GetCanvas2dPixelsByKey(std::string_view key) const;
 
   const std::string& platform() const { return platform_; }
@@ -209,8 +200,6 @@ class COMPONENT_EXPORT(FINGERPRINT) FingerprintPolicy {
 
   bool anti_bot_bypass_ = false;
 
-  // Structured surfaces block (immutable after parse). Held via shared_ptr so
-  // the defaulted copy/move constructors stay valid and copies stay cheap.
   std::shared_ptr<const base::DictValue> surfaces_;
 };
 

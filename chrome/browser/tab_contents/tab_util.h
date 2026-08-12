@@ -14,7 +14,7 @@ class Profile;
 
 namespace content {
 class WebContents;
-}  // namespace content
+}
 
 namespace tab_util {
 

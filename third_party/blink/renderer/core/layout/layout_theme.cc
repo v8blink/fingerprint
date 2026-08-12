@@ -627,7 +627,6 @@ Color LayoutTheme::SystemColor(CSSValueID css_value_id,
                                mojom::blink::ColorScheme color_scheme,
                                const ui::ColorProvider* color_provider,
                                bool can_expose_accent_color) const {
-  // Tanya810 Phase C: replay surfaces.css.system.colors[<keyword>].
   {
     const auto& tp = fingerprint::FingerprintPolicy::ProcessDefault();
     if (tp.SurfaceActive("css")) {
@@ -639,7 +638,6 @@ Color LayoutTheme::SystemColor(CSSValueID css_value_id,
           if (cs) {
             Color parsed;
             if (CSSParser::ParseColor(parsed, String::FromUtf8(*cs))) {
-              VLOG(1) << "Tanya810 [css] system_color mode=INJECT key=" << kw;
               return parsed;
             }
           }
