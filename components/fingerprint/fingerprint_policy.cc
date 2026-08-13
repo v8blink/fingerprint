@@ -132,9 +132,7 @@ FingerprintPolicy FingerprintPolicy::FromProfileJson(
   p.screen_ = get("screen");
   p.webrtc_public_ip_ = get("webrtc_public_ip");
 
-  size_t surface_count = 0;
   if (const base::DictValue* surfaces = dict.FindDict("surfaces")) {
-    surface_count = surfaces->size();
     p.surfaces_ = std::make_shared<const base::DictValue>(surfaces->Clone());
   }
   return p;
