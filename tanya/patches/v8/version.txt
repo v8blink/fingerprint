@@ -1,0 +1,6 @@
+VisibleV8 (VV8) — V8-side patchset
+Target:  Chromium 152 / V8 15.2.114.0
+Origin:  VisibleV8 Chrome-147 patchset (aiworks/visiblev8/patches/5a40bc538bcbf1b9f4010),
+         ported to V8 15.2 and trimmed to Windows-only
+         (Linux/Android + Java-bridge parts dropped).
+Files:   19  (18 modified + 1 new: src/runtime/runtime-utils.cc)
