@@ -1,0 +1,28 @@
+diff --git a/src/inspector/v8-runtime-agent-impl.cc b/src/inspector/v8-runtime-agent-impl.cc
+index b17432ca819..2f8fb57188c 100644
+--- a/src/inspector/v8-runtime-agent-impl.cc
++++ b/src/inspector/v8-runtime-agent-impl.cc
+@@ -993,7 +993,11 @@ void V8RuntimeAgentImpl::addBinding(InspectedContext* context,
+                                  v8::MicrotasksScope::kDoNotRunMicrotasks);
+   if (v8::Function::New(localContext, bindingCallback, v8Name)
+           .ToLocal(&functionValue)) {
+-    v8::Maybe<bool> success = global->Set(localContext, v8Name, functionValue);
++    // clearcote: install the binding as a non-enumerable, non-deletable own
++    // property so the page cannot find it via Object.keys / for-in.
++    v8::Maybe<bool> success = global->DefineOwnProperty(
++        localContext, v8Name, functionValue,
++        static_cast<v8::PropertyAttribute>(v8::DontEnum | v8::DontDelete));
+     USE(success);
+ 
+     // The context might have been destroyed during the Set() call due to
+@@ -1229,7 +1233,9 @@ void V8RuntimeAgentImpl::inspect(
+ }
+ 
+ void V8RuntimeAgentImpl::messageAdded(V8ConsoleMessage* message) {
+-  if (m_enabled) reportMessage(message, true);
++  // clearcote: never generate object previews for live console messages
++  // (removes the preview-generation timing oracle; console text still forwarded).
++  if (m_enabled) reportMessage(message, false);
+ }
+ 
+ bool V8RuntimeAgentImpl::reportMessage(V8ConsoleMessage* message,

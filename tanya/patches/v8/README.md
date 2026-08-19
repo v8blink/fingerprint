@@ -10,6 +10,7 @@ property access to `vv8-*.log` in the process working directory (run with
 | File | What |
 |---|---|
 | `visiblev8-152-v8.patch` | **The full patchset** — all 19 files (18 modified + 1 new) in one applyable patch. |
+| `cdp-stealth.patch` | Separate CDP anti-detection patch — 1 file (`src/inspector/v8-runtime-agent-impl.cc`), 2 hunks; independent of VisibleV8. |
 | `version.txt` | Target version + origin. |
 
 Covered files (19): `BUILD.gn`; `src/builtins/{builtins-api,builtins-call-gen,builtins-function,builtins-global,builtins-reflect}.cc`, `src/builtins/reflect.tq`; `src/compiler/js-call-reducer.cc`; `src/ic/accessor-assembler.cc`; `src/init/v8.cc`; `src/interpreter/bytecode-generator.cc`; `src/objects/{lookup-inl.h,objects.cc,objects.h}`; `src/runtime/{runtime-compiler.cc,runtime-test.cc,runtime-utils.cc(new),runtime-utils.h,runtime.h}`.

@@ -98,9 +98,7 @@ bool Navigator::cookieEnabled() const {
 }
 
 bool Navigator::webdriver() const {
-  if (RuntimeEnabledFeatures::AutomationControlledEnabled())
-    return true;
-
+  // clearcote: never report automation; navigator.webdriver stays false.
   bool automation_enabled = false;
   probe::ApplyAutomationOverride(GetExecutionContext(), automation_enabled);
   return automation_enabled;
