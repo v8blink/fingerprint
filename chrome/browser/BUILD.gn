@@ -1133,6 +1133,7 @@ source_set("core") {
     "//components/embedder_support",
     "//components/embedder_support:content_settings",
     "//components/embedder_support:user_agent",
+    "//components/fingerprint",
     "//components/enterprise/data_controls/content/browser",
     "//components/enterprise/data_controls/core/browser:features",
     "//components/enterprise/net",

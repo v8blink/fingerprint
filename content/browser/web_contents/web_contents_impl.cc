@@ -5551,7 +5551,28 @@ FrameTree* WebContentsImpl::CreateNewWindow(
       site_instance =
           SiteInstance::CreateForGuest(GetBrowserContext(), partition_config);
     } else {
-      site_instance = SiteInstance::Create(GetBrowserContext());
+      StoragePartitionConfig inherited_partition_config = partition_config;
+      if (inherited_partition_config.is_default()) {
+        if (StoragePartition* opener_partition = opener->GetStoragePartition();
+            opener_partition && !opener_partition->GetConfig().is_default()) {
+          inherited_partition_config = opener_partition->GetConfig();
+        }
+      }
+      if (inherited_partition_config.is_default()) {
+        site_instance = SiteInstance::Create(GetBrowserContext());
+      } else {
+        GURL site_url = params.target_url;
+        if (!SiteInstance::ShouldAssignSiteForURL(site_url)) {
+          site_url = GURL(url::kAboutBlankURL);
+        }
+        if (SiteInstance::ShouldAssignSiteForURL(site_url)) {
+          site_instance = SiteInstance::CreateForFixedStoragePartition(
+              GetBrowserContext(), site_url, inherited_partition_config);
+        } else {
+          site_instance = SiteInstance::CreateForGuest(
+              GetBrowserContext(), inherited_partition_config);
+        }
+      }
     }
   } else {
     site_instance = source_site_instance;
@@ -7133,6 +7154,14 @@ const std::string& WebContentsImpl::GetContentsMimeType() {
 
 blink::RendererPreferences* WebContentsImpl::GetMutableRendererPrefs() {
   return &renderer_preferences_;
+}
+
+void WebContentsImpl::SetTanyaFingerprintProfileJson(std::string json) {
+  tanya_fingerprint_profile_json_ = std::move(json);
+}
+
+std::string WebContentsImpl::GetTanyaFingerprintProfileJson() {
+  return tanya_fingerprint_profile_json_;
 }
 
 void WebContentsImpl::DragSourceEndedAt(float client_x,

@@ -8,6 +8,7 @@
 #include <stdint.h>
 
 #include <optional>
+#include <string>
 
 #include "base/process/kill.h"
 #include "content/browser/dom_storage/session_storage_namespace_impl.h"
@@ -93,6 +94,8 @@ class RenderViewHostDelegate {
   // before calling this.
   virtual const blink::web_pref::WebPreferences& GetOrCreateWebPreferences(
       RenderViewHostImpl* render_view_host) = 0;
+
+  virtual std::string GetTanyaFingerprintProfileJson();
 
   // Sets the WebPreferences for the WebContents associated with this
   // RenderViewHost to |prefs| and send the new value to all renderers in the

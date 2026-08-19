@@ -32,12 +32,17 @@
 #include "third_party/blink/renderer/platform/wtf/text/atomic_string.h"
 #include "third_party/blink/renderer/platform/wtf/vector.h"
 
+#include "base/logging.h"
+#include "base/values.h"
+#include "components/fingerprint/fingerprint_policy.h"
+
 namespace blink {
 
 namespace {
-DOMPlugin* MakeFakePlugin(String plugin_name, LocalDOMWindow* window) {
-  String description = "Portable Document Format";
-  String filename = "internal-pdf-viewer";
+DOMPlugin* MakePlugin(String plugin_name,
+                      String description,
+                      String filename,
+                      LocalDOMWindow* window) {
   auto* plugin_info =
       MakeGarbageCollected<PluginInfo>(plugin_name, filename, description,
                                        /*background_color=*/Color::kTransparent,
@@ -50,9 +55,38 @@ DOMPlugin* MakeFakePlugin(String plugin_name, LocalDOMWindow* window) {
   }
   return MakeGarbageCollected<DOMPlugin>(window, *plugin_info);
 }
+
+DOMPlugin* MakeFakePlugin(String plugin_name, LocalDOMWindow* window) {
+  return MakePlugin(plugin_name, "Portable Document Format",
+                    "internal-pdf-viewer", window);
+}
 }  // namespace
 
 DOMPluginArray::DOMPluginArray(LocalDOMWindow* window) : window_(window) {
+  const auto& tp = fingerprint::FingerprintPolicy::ProcessDefault();
+  if (tp.SurfaceActive("navigator")) {
+    if (const base::ListValue* list =
+            tp.GetSurfaceList("navigator", "plugins")) {
+      for (const base::Value& e : *list) {
+        const base::DictValue* d = e.GetIfDict();
+        if (!d) {
+          continue;
+        }
+        const std::string* name = d->FindString("name");
+        if (!name) {
+          continue;
+        }
+        const std::string* desc = d->FindString("description");
+        const std::string* file = d->FindString("filename");
+        dom_plugins_.push_back(MakePlugin(
+            String::FromUtf8(*name),
+            String::FromUtf8(desc ? *desc : std::string()),
+            String::FromUtf8(file ? *file : std::string()), window));
+      }
+      return;
+    }
+  }
+
   if (IsPdfViewerAvailable()) {
     // See crbug.com/1164635 and https://github.com/whatwg/html/pull/6738.
     // To reduce fingerprinting and make plugins/mimetypes more

@@ -268,6 +268,7 @@ class CORE_EXPORT CanvasRenderingContext
                               const ComputedStyle& new_style) {}
   virtual void LangAttributeChanged() {}
   virtual String GetIdFromControl(const Element* element) { return String(); }
+  virtual String TanyaDrawnText() const { return String(); }
   virtual int LayerCount() const { return 0; }
   virtual scoped_refptr<const cc::AnimatedImageFrameIndexMap>
   GetAnimatedImageFrameIndexMap(uint32_t id) const {

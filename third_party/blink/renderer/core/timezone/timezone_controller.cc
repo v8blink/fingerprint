@@ -5,6 +5,8 @@
 #include "third_party/blink/renderer/core/timezone/timezone_controller.h"
 
 #include "base/feature_list.h"
+#include "base/logging.h"
+#include "components/fingerprint/fingerprint_policy.h"
 #include "mojo/public/cpp/bindings/pending_remote.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "third_party/blink/public/common/thread_safe_browser_interface_broker_proxy.h"
@@ -60,6 +62,19 @@ String GetTimezoneId(const icu::TimeZone& timezone) {
 }
 
 String GetCurrentTimezoneId() {
+  const std::string override_tz =
+      fingerprint::FingerprintPolicy::ProcessDefault().timezone();
+  if (!override_tz.empty()) {
+    std::unique_ptr<icu::TimeZone> tz(icu::TimeZone::createTimeZone(
+        icu::UnicodeString(override_tz.data(),
+                           static_cast<int32_t>(override_tz.size()), US_INV)));
+    if (tz && *tz != icu::TimeZone::getUnknown()) {
+      String id = GetTimezoneId(*tz);
+      icu::TimeZone::adoptDefault(tz.release());
+      return id;
+    }
+  }
+
   std::unique_ptr<icu::TimeZone> timezone(icu::TimeZone::createDefault());
   CHECK(timezone);
   return GetTimezoneId(*timezone.get());

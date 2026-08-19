@@ -146,6 +146,10 @@ namespace ui {
 class ColorProvider;
 }  // namespace ui
 
+namespace fingerprint {
+class FingerprintPolicy;
+}
+
 namespace blink {
 
 class AXContext;
@@ -724,6 +728,7 @@ class CORE_EXPORT Document : public ContainerNode,
   LocalFrameView* View() const;   // can be null
   LocalFrame* GetFrame() const;   // can be null
   Page* GetPage() const;          // can be null
+  const fingerprint::FingerprintPolicy& GetFingerprintPolicy() const;
   Settings* GetSettings() const;  // can be null
 
   float DevicePixelRatio() const;

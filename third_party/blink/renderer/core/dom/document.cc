@@ -48,6 +48,7 @@
 #include "cc/animation/animation_timeline.h"
 #include "cc/input/overscroll_behavior.h"
 #include "cc/input/scroll_snap_data.h"
+#include "components/fingerprint/fingerprint_policy.h"
 #include "mojo/public/cpp/bindings/lib/wtf_hash_util.h"
 #include "mojo/public/cpp/bindings/pending_remote.h"
 #include "mojo/public/cpp/bindings/remote.h"
@@ -2340,6 +2341,13 @@ LocalFrame* Document::GetFrame() const {
 
 Page* Document::GetPage() const {
   return GetFrame() ? GetFrame()->GetPage() : nullptr;
+}
+
+const fingerprint::FingerprintPolicy& Document::GetFingerprintPolicy() const {
+  if (Page* page = GetPage()) {
+    return page->GetChromeClient().GetFingerprintPolicy();
+  }
+  return fingerprint::FingerprintPolicy::ProcessDefault();
 }
 
 Settings* Document::GetSettings() const {

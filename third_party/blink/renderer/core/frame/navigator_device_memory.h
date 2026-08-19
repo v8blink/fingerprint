@@ -11,7 +11,7 @@ namespace blink {
 
 class CORE_EXPORT NavigatorDeviceMemory {
  public:
-  float deviceMemory() const;
+  virtual float deviceMemory() const;
 };
 
 }  // namespace blink

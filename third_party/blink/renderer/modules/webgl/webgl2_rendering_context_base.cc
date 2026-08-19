@@ -11,6 +11,7 @@
 #include "base/feature_list.h"
 #include "base/numerics/checked_math.h"
 #include "base/numerics/safe_conversions.h"
+#include "components/fingerprint/fingerprint_policy.h"
 #include "gpu/command_buffer/client/gles2_interface.h"
 #include "third_party/blink/public/common/features.h"
 #include "third_party/blink/public/platform/web_graphics_context_3d_provider.h"
@@ -4842,17 +4843,31 @@ ScriptValue WebGL2RenderingContextBase::getParameter(ScriptState* script_state,
     return ScriptValue::CreateNull(script_state->GetIsolate());
   switch (pname) {
     case GL_SHADING_LANGUAGE_VERSION: {
+      const fingerprint::FingerprintPolicy& gl_policy =
+          fingerprint::FingerprintPolicy::ProcessDefault();
+      if (gl_policy.enabled() && !gl_policy.IsSurfaceDisabled("webgl")) {
+        return WebGLAny(
+            script_state,
+            String("WebGL GLSL ES 3.00 (OpenGL ES GLSL ES 3.0 Chromium)"));
+      }
       return WebGLAny(
           script_state,
           StrCat({"WebGL GLSL ES 3.00 (",
                   String(ContextGL()->GetString(GL_SHADING_LANGUAGE_VERSION)),
                   ")"}));
     }
-    case GL_VERSION:
+    case GL_VERSION: {
+      const fingerprint::FingerprintPolicy& gl_policy =
+          fingerprint::FingerprintPolicy::ProcessDefault();
+      if (gl_policy.enabled() && !gl_policy.IsSurfaceDisabled("webgl")) {
+        return WebGLAny(script_state,
+                        String("WebGL 2.0 (OpenGL ES 3.0 Chromium)"));
+      }
       return WebGLAny(
           script_state,
           StrCat({"WebGL 2.0 (", String(ContextGL()->GetString(GL_VERSION)),
                   ")"}));
+    }
 
     case GL_COPY_READ_BUFFER_BINDING:
       return WebGLAny(script_state, bound_copy_read_buffer_.Get());

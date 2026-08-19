@@ -26,6 +26,8 @@
 #ifndef THIRD_PARTY_BLINK_RENDERER_CORE_HTML_CANVAS_TEXT_METRICS_H_
 #define THIRD_PARTY_BLINK_RENDERER_CORE_HTML_CANVAS_TEXT_METRICS_H_
 
+#include <string>
+
 #include "third_party/blink/renderer/bindings/core/v8/v8_baselines.h"
 #include "third_party/blink/renderer/bindings/core/v8/v8_canvas_text_align.h"
 #include "third_party/blink/renderer/bindings/core/v8/v8_canvas_text_baseline.h"
@@ -93,6 +95,8 @@ class CORE_EXPORT TextMetrics final : public ScriptWrappable {
       const TextClusterOptions* options);
 
   const Font* GetFont() const { return font_; }
+
+  void ApplyTanyaMetrics(const std::string& device_model);
 
   void Trace(Visitor*) const override;
 

@@ -188,6 +188,15 @@
     </div>
   </template>
 
+  <template is="dom-if" if="[[showPage_(pageVisibility_.fingerprint)]]">
+    <div slot="view" id="fingerprint">
+      <template is="dom-if" if="[[renderPlugin_(
+          routes_.FINGERPRINT, lastRoute_, inSearchMode_)]]">
+        <settings-fingerprint-page></settings-fingerprint-page>
+      </template>
+    </div>
+  </template>
+
   <template is="dom-if" if="[[showPage_(pageVisibility_.a11y)]]">
     <div slot="view" id="a11y">
       <template is="dom-if" if="[[renderPlugin_(

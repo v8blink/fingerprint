@@ -302,6 +302,7 @@ class CORE_EXPORT WebViewImpl final : public WebView,
       const blink::web_pref::WebPreferences& preferences) override;
   void UpdateRendererPreferences(
       const RendererPreferences& preferences) override;
+  void UpdateTanyaFingerprintProfile(mojo_base::BigBuffer profile) override;
   void SetHistoryIndexAndLength(int32_t history_index,
                                 int32_t history_length) override;
   void SetPageBaseBackgroundColor(std::optional<SkColor> color) override;

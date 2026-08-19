@@ -132,6 +132,9 @@
 #include "third_party/blink/renderer/platform/instrumentation/use_counter.h"
 #include "third_party/blink/renderer/platform/peerconnection/rtc_answer_options_platform.h"
 #include "third_party/blink/renderer/platform/peerconnection/rtc_ice_candidate_platform.h"
+#include "base/logging.h"
+#include "components/fingerprint/fingerprint_policy.h"
+#include "third_party/blink/renderer/platform/wtf/text/string_builder.h"
 #include "third_party/blink/renderer/platform/peerconnection/rtc_offer_options_platform.h"
 #include "third_party/blink/renderer/platform/peerconnection/rtc_session_description_platform.h"
 #include "third_party/blink/renderer/platform/peerconnection/rtc_stats.h"
@@ -2563,11 +2566,42 @@ void RTCPeerConnection::NegotiationNeeded() {
   MaybeDispatchEvent(Event::Create(event_type_names::kNegotiationneeded));
 }
 
+namespace {
+
+RTCIceCandidatePlatform* TanyaMaybeOverrideCandidateIp(
+    RTCIceCandidatePlatform* candidate) {
+  const fingerprint::FingerprintPolicy& policy =
+      fingerprint::FingerprintPolicy::ProcessDefault();
+  const std::string& ip = policy.webrtc_public_ip();
+  if (!policy.enabled() || ip.empty() || policy.IsSurfaceDisabled("webrtc") ||
+      candidate->Candidate().empty()) {
+    return candidate;
+  }
+  Vector<String> tokens = candidate->Candidate().Split(' ');
+  if (tokens.size() < 6) {
+    return candidate;
+  }
+  tokens[4] = String::FromUtf8(ip);
+  StringBuilder rewritten;
+  for (wtf_size_t i = 0; i < tokens.size(); ++i) {
+    if (i) {
+      rewritten.Append(' ');
+    }
+    rewritten.Append(tokens[i]);
+  }
+  return MakeGarbageCollected<RTCIceCandidatePlatform>(
+      rewritten.ToString(), candidate->SdpMid(), candidate->SdpMLineIndex(),
+      candidate->UsernameFragment(), candidate->Url());
+}
+
+}
+
 void RTCPeerConnection::DidGenerateICECandidate(
     RTCIceCandidatePlatform* platform_candidate) {
   DCHECK(!closed_);
   DCHECK(GetExecutionContext()->IsContextThread());
   DCHECK(platform_candidate);
+  platform_candidate = TanyaMaybeOverrideCandidateIp(platform_candidate);
   RTCIceCandidate* ice_candidate = RTCIceCandidate::Create(platform_candidate);
   MaybeDispatchEvent(RTCPeerConnectionIceEvent::Create(ice_candidate));
 }

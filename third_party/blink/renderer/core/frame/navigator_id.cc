@@ -32,7 +32,9 @@
 #include "third_party/blink/renderer/core/frame/navigator_id.h"
 
 #include "base/feature_list.h"
+#include "base/logging.h"
 #include "build/build_config.h"
+#include "components/fingerprint/fingerprint_policy.h"
 #include "third_party/blink/public/common/features.h"
 #include "third_party/blink/renderer/platform/wtf/text/string_builder.h"
 
@@ -59,6 +61,26 @@ String NavigatorID::appVersion() {
 }
 
 String NavigatorID::platform() const {
+  const fingerprint::FingerprintPolicy& policy =
+      fingerprint::FingerprintPolicy::ProcessDefault();
+  if (policy.enabled()) {
+    const std::string& p = policy.platform();
+    if (p == "windows") {
+      return "Win32";
+    }
+    if (p == "macos") {
+      return "MacIntel";
+    }
+    if (p == "linux") {
+      return "Linux x86_64";
+    }
+    if (p == "android") {
+      return "Linux armv8l";
+    }
+    if (p == "ios") {
+      return "iPhone";
+    }
+  }
 #if BUILDFLAG(IS_MAC)
   // Match Safari and Mozilla on Mac x86.
   return "MacIntel";

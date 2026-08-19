@@ -35,9 +35,19 @@
 #include "third_party/blink/renderer/core/frame/navigator.h"
 #include "third_party/blink/renderer/core/frame/settings.h"
 
+#include <optional>
+
+#include "base/logging.h"
+#include "base/values.h"
+#include "components/fingerprint/fingerprint_policy.h"
+
 namespace blink {
 
 int32_t NavigatorEvents::maxTouchPoints(Navigator& navigator) {
+  const auto& tp = fingerprint::FingerprintPolicy::ProcessDefault();
+  if (std::optional<int> v = tp.GetSurfaceInt("navigator", "maxTouchPoints")) {
+    return static_cast<int32_t>(*v);
+  }
   LocalDOMWindow* window = navigator.DomWindow();
   return window ? window->GetFrame()->GetSettings()->GetMaxTouchPoints() : 0;
 }

@@ -204,4 +204,6 @@ struct RendererPreferences {
 
   // Whether line wrapping should be enabled by default in view source pages.
   bool view_source_line_wrap_enabled = false;
+
+  bool fingerprint_enabled = false;
 };

@@ -25,6 +25,8 @@
  */
 
 #include "third_party/blink/renderer/core/workers/worker_navigator.h"
+#include "base/logging.h"
+#include "components/fingerprint/fingerprint_policy.h"
 #include "third_party/blink/public/platform/web_worker_fetch_context.h"
 #include "third_party/blink/renderer/core/dom/events/event.h"
 #include "third_party/blink/renderer/core/dom/events/event_target.h"
@@ -41,6 +43,12 @@ WorkerNavigator::WorkerNavigator(ExecutionContext* execution_context)
 WorkerNavigator::~WorkerNavigator() = default;
 
 String WorkerNavigator::GetAcceptLanguages() {
+  const std::string& fingerprint_languages =
+      fingerprint::FingerprintPolicy::ProcessDefault().languages();
+  if (!fingerprint_languages.empty()) {
+    return String::FromUtf8(fingerprint_languages);
+  }
+
   auto* global_scope = To<WorkerOrWorkletGlobalScope>(GetExecutionContext());
   if (!global_scope) {
     // Prospective fix for crbug.com/40945292 and crbug.com/40827704

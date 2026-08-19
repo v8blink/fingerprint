@@ -26,6 +26,10 @@
 
 #include "third_party/blink/renderer/core/html/media/html_media_element.h"
 
+#include "base/logging.h"
+#include "base/values.h"
+#include "components/fingerprint/fingerprint_policy.h"
+
 #include <algorithm>
 #include <limits>
 #include <utility>
@@ -1059,6 +1063,34 @@ HTMLMediaElement::NetworkState HTMLMediaElement::getNetworkState() const {
 
 V8CanPlayTypeResult HTMLMediaElement::canPlayType(
     const String& mime_type) const {
+  const auto& tp = fingerprint::FingerprintPolicy::ProcessDefault();
+  if (tp.SurfaceActive("media")) {
+    if (const base::ListValue* list =
+            tp.GetSurfaceList("media", "mimeTypes")) {
+      const std::string mt = mime_type.Utf8();
+      const bool is_video = mt.rfind("video/", 0) == 0;
+      for (const base::Value& e : *list) {
+        const base::DictValue* d = e.GetIfDict();
+        if (!d) {
+          continue;
+        }
+        const std::string* m = d->FindString("mimeType");
+        if (!m || *m != mt) {
+          continue;
+        }
+        const std::string* r =
+            d->FindString(is_video ? "videoPlayType" : "audioPlayType");
+        if (r && *r == "probably") {
+          return V8CanPlayTypeResult(V8CanPlayTypeResult::Enum::kProbably);
+        }
+        if (r && *r == "maybe") {
+          return V8CanPlayTypeResult(V8CanPlayTypeResult::Enum::kMaybe);
+        }
+        return V8CanPlayTypeResult(V8CanPlayTypeResult::Enum::k);
+      }
+    }
+  }
+
   MIMETypeRegistry::SupportsType support =
       GetSupportsType(ContentType(mime_type));
 

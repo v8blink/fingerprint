@@ -572,6 +572,7 @@ class CONTENT_EXPORT WebContentsImpl
                      base::OnceCallback<void(int64_t)> callback) override;
   const std::string& GetContentsMimeType() override;
   blink::RendererPreferences* GetMutableRendererPrefs() override;
+  void SetTanyaFingerprintProfileJson(std::string json) override;
   void Close() override;
   void SetClosedByUserGesture(bool value) override;
   bool GetClosedByUserGesture() override;
@@ -987,6 +988,7 @@ class CONTENT_EXPORT WebContentsImpl
       RenderViewHostImpl* render_view_host) override;
   const blink::web_pref::WebPreferences& GetOrCreateWebPreferences(
       RenderViewHostImpl* render_view_host) override;
+  std::string GetTanyaFingerprintProfileJson() override;
   void DidReceiveInputEvent(RenderWidgetHostImpl* render_widget_host,
                             const blink::WebInputEvent& event) override;
   void SimulateUserInteraction(RenderWidgetHostImpl* render_widget_host,
@@ -2490,6 +2492,8 @@ class CONTENT_EXPORT WebContentsImpl
 
   // Settings that get passed to the renderer process.
   blink::RendererPreferences renderer_preferences_;
+
+  std::string tanya_fingerprint_profile_json_;
 
   // The time ticks that this WebContents was last made active. The initial
   // value is the WebContents creation time.

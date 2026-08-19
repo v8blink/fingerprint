@@ -105,6 +105,8 @@ class MODULES_EXPORT Canvas2DRecorderContext : public CanvasPath {
 
   ~Canvas2DRecorderContext() override;
 
+  String tanya_drawn_text_;
+
   v8::Local<v8::Value> strokeStyle(ScriptState* script_state) const;
   void setStrokeStyle(v8::Isolate* isolate,
                       v8::Local<v8::Value> value,

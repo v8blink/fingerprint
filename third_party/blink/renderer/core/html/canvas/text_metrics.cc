@@ -643,4 +643,59 @@ unsigned TextMetrics::CorrectForMixedBidi(
   return run_offset + riter->character_offset_;
 }
 
+namespace {
+
+struct TanyaTextMetricEntry {
+  const char* device_slug;
+  const char* text;
+  double width;
+  double actual_bounding_box_left;
+  double actual_bounding_box_right;
+  double font_bounding_box_ascent;
+  double font_bounding_box_descent;
+  double actual_bounding_box_ascent;
+  double actual_bounding_box_descent;
+  double em_height_ascent;
+  double em_height_descent;
+};
+
+const TanyaTextMetricEntry kTanyaTextMetrics[] = {};
+const size_t kTanyaTextMetricCount = 0u;
+
+const TanyaTextMetricEntry* FindTanyaTextMetric(const std::string& device_model,
+                                                const String& text) {
+  if (kTanyaTextMetricCount == 0u) {
+    return nullptr;
+  }
+  for (size_t i = 0; i != kTanyaTextMetricCount; ++i) {
+    const TanyaTextMetricEntry& e = kTanyaTextMetrics[i];
+    if (device_model != e.device_slug) {
+      continue;
+    }
+    if (text != e.text) {
+      continue;
+    }
+    return &e;
+  }
+  return nullptr;
+}
+
+}
+
+void TextMetrics::ApplyTanyaMetrics(const std::string& device_model) {
+  const TanyaTextMetricEntry* entry = FindTanyaTextMetric(device_model, text_);
+  if (!entry) {
+    return;
+  }
+  width_ = entry->width;
+  actual_bounding_box_left_ = entry->actual_bounding_box_left;
+  actual_bounding_box_right_ = entry->actual_bounding_box_right;
+  font_bounding_box_ascent_ = entry->font_bounding_box_ascent;
+  font_bounding_box_descent_ = entry->font_bounding_box_descent;
+  actual_bounding_box_ascent_ = entry->actual_bounding_box_ascent;
+  actual_bounding_box_descent_ = entry->actual_bounding_box_descent;
+  em_height_ascent_ = entry->em_height_ascent;
+  em_height_descent_ = entry->em_height_descent;
+}
+
 }  // namespace blink

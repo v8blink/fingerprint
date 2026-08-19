@@ -20,6 +20,11 @@
 
 #include "third_party/blink/renderer/core/svg/svg_text_content_element.h"
 
+#include <optional>
+
+#include "base/logging.h"
+#include "components/fingerprint/fingerprint_policy.h"
+
 #include "third_party/blink/renderer/bindings/core/v8/v8_dom_point_init.h"
 #include "third_party/blink/renderer/core/css/css_property_names.h"
 #include "third_party/blink/renderer/core/css_value_keywords.h"
@@ -110,6 +115,18 @@ unsigned SVGTextContentElement::getNumberOfChars() {
 }
 
 float SVGTextContentElement::getComputedTextLength() {
+  const auto& tp = fingerprint::FingerprintPolicy::ProcessDefault();
+  if (tp.SurfaceActive("svg")) {
+    if (const base::DictValue* m =
+            tp.GetSurfaceDict("svg", "computedTextLengthByEmoji")) {
+      if (auto ev = m->FindDouble(textContent().Utf8())) {
+        return static_cast<float>(*ev);
+      }
+    }
+    if (auto v = tp.GetSurfaceDouble("svg", "computedTextLength")) {
+      return static_cast<float>(*v);
+    }
+  }
   GetDocument().UpdateStyleAndLayoutForNode(this,
                                             DocumentUpdateReason::kJavaScript);
   auto* layout_object = GetLayoutObject();
@@ -140,6 +157,13 @@ float SVGTextContentElement::getSubStringLength(
 
   if (nchars > number_of_chars - charnum)
     nchars = number_of_chars - charnum;
+
+  const auto& tp = fingerprint::FingerprintPolicy::ProcessDefault();
+  if (tp.SurfaceActive("svg")) {
+    if (std::optional<double> v = tp.GetSurfaceDouble("svg", "subStringLength")) {
+      return static_cast<float>(*v);
+    }
+  }
 
   auto* layout_object = GetLayoutObject();
   if (IsNGTextOrInline(layout_object)) {
@@ -213,6 +237,16 @@ SVGRectTearOff* SVGTextContentElement::getExtentOfChar(
   }
 
   gfx::RectF rect;
+  const auto& tp = fingerprint::FingerprintPolicy::ProcessDefault();
+  if (tp.SurfaceActive("svg")) {
+    if (const base::DictValue* r = tp.GetSurfaceDict("svg", "extentOfCharFull")) {
+      rect = gfx::RectF(static_cast<float>(r->FindDouble("x").value_or(0)),
+                        static_cast<float>(r->FindDouble("y").value_or(0)),
+                        static_cast<float>(r->FindDouble("width").value_or(0)),
+                        static_cast<float>(r->FindDouble("height").value_or(0)));
+      return SVGRectTearOff::CreateDetached(rect);
+    }
+  }
   auto* layout_object = GetLayoutObject();
   if (IsNGTextOrInline(layout_object)) {
     rect = NoopWillBeInvScaleRect(

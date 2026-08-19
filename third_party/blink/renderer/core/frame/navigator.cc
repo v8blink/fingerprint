@@ -23,6 +23,8 @@
 
 #include "third_party/blink/renderer/core/frame/navigator.h"
 
+#include "base/logging.h"
+#include "components/fingerprint/fingerprint_policy.h"
 #include "third_party/blink/renderer/bindings/core/v8/script_controller.h"
 #include "third_party/blink/renderer/core/dom/document.h"
 #include "third_party/blink/renderer/core/execution_context/navigator_base.h"
@@ -44,6 +46,10 @@ String Navigator::productSub() const {
 }
 
 String Navigator::vendor() const {
+  const auto& p = fingerprint::FingerprintPolicy::ProcessDefault();
+  if (std::optional<std::string> v = p.GetSurfaceString("navigator", "vendor")) {
+    return String::FromUtf8(*v);
+  }
   // Do not change without good cause. History:
   // https://code.google.com/p/chromium/issues/detail?id=276813
   // https://www.w3.org/Bugs/Public/show_bug.cgi?id=27786
@@ -105,6 +111,20 @@ bool Navigator::webdriver() const {
 }
 
 String Navigator::GetAcceptLanguages() {
+  const fingerprint::FingerprintPolicy* policy = nullptr;
+  if (DomWindow()) {
+    if (auto* doc = DomWindow()->document()) {
+      policy = &doc->GetFingerprintPolicy();
+    }
+  }
+  if (!policy) {
+    policy = &fingerprint::FingerprintPolicy::ProcessDefault();
+  }
+  const std::string& fingerprint_languages = policy->languages();
+  if (!fingerprint_languages.empty()) {
+    return String::FromUtf8(fingerprint_languages);
+  }
+
   if (!DomWindow())
     return DefaultLanguage();
 

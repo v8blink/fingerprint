@@ -26,7 +26,9 @@
 #include "third_party/blink/renderer/modules/webaudio/base_audio_context.h"
 
 #include "base/metrics/histogram_functions.h"
+#include "base/strings/string_number_conversions.h"
 #include "build/build_config.h"
+#include "components/fingerprint/fingerprint_policy.h"
 #include "media/base/audio_bus.h"
 #include "third_party/blink/public/mojom/devtools/console_message.mojom-blink.h"
 #include "third_party/blink/public/mojom/frame/lifecycle.mojom-shared.h"
@@ -265,6 +267,21 @@ AudioDestinationNode* BaseAudioContext::destination() const {
   // managed by Oilpan, and the audio thread is not managed by Oilpan.
   DCHECK(!IsAudioThread());
   return destination_node_.Get();
+}
+
+float BaseAudioContext::sampleRate() const {
+  const fingerprint::FingerprintPolicy& policy =
+      fingerprint::FingerprintPolicy::ProcessDefault();
+  if (policy.enabled() && !policy.IsSurfaceDisabled("audio")) {
+    const std::string& sr = policy.audio_sample_rate();
+    if (!sr.empty()) {
+      double v = 0;
+      if (base::StringToDouble(sr, &v) && v > 0) {
+        return static_cast<float>(v);
+      }
+    }
+  }
+  return destination_handler_->SampleRate();
 }
 
 void BaseAudioContext::WarnIfContextClosed(const AudioHandler* handler) const {

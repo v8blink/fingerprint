@@ -822,6 +822,7 @@ void Canvas2DRecorderContext::RestoreMatrixClipStack(cc::PaintCanvas* c) const {
 }
 
 void Canvas2DRecorderContext::ResetInternal() {
+  tanya_drawn_text_ = String();
   ValidateStateStack();
   state_stack_.resize(1);
   state_stack_.front() = MakeGarbageCollected<CanvasRenderingContext2DState>();
@@ -1928,6 +1929,7 @@ void Canvas2DRecorderContext::clearRect(double x,
                                         double y,
                                         double width,
                                         double height) {
+  tanya_drawn_text_ = String();
   if (!ValidateRectForCanvas(x, y, width, height)) {
     return;
   }

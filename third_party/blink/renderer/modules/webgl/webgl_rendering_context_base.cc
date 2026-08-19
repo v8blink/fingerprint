@@ -27,6 +27,7 @@
 
 #include <inttypes.h>
 
+#include <cstring>
 #include <memory>
 #include <utility>
 
@@ -45,6 +46,9 @@
 #include "base/trace_event/memory_dump_manager.h"
 #include "base/trace_event/trace_event.h"
 #include "build/build_config.h"
+#include "base/logging.h"
+#include "components/fingerprint/fingerprint_policy.h"
+#include "third_party/blink/renderer/modules/webgl/tanya_webgl_capture_data.h"
 #include "components/viz/common/gpu/raster_context_provider.h"
 #include "components/viz/common/resources/shared_image_format_utils.h"
 #include "device/vr/buildflags/buildflags.h"
@@ -584,6 +588,287 @@ GLint Clamp(GLint value, GLint min, GLint max) {
 // not generate INVALID_VALUE for these out-of-range characters.
 // Shader compilation must fail for invalid constructs farther in the
 // pipeline.
+struct TanyaWebGLReference {
+  GLint max_texture_size;
+  GLint max_cube_map_texture_size;
+  GLint max_renderbuffer_size;
+  GLint max_viewport_dim_x;
+  GLint max_viewport_dim_y;
+  GLint max_vertex_attribs;
+  GLint max_vertex_uniform_vectors;
+  GLint max_vertex_texture_image_units;
+  GLint max_varying_vectors;
+  GLint max_combined_texture_image_units;
+  GLint max_texture_image_units;
+  GLint max_fragment_uniform_vectors;
+  GLint max_3d_texture_size;
+  GLint max_array_texture_layers;
+  GLint max_color_attachments;
+  GLint max_combined_uniform_blocks;
+  GLint max_draw_buffers;
+  GLint max_elements_indices;
+  GLint max_elements_vertices;
+  GLint max_fragment_input_components;
+  GLint max_fragment_uniform_blocks;
+  GLint max_fragment_uniform_components;
+  GLint max_program_texel_offset;
+  GLint max_samples;
+  GLint max_transform_feedback_interleaved_components;
+  GLint max_transform_feedback_separate_attribs;
+  GLint max_transform_feedback_separate_components;
+  GLint max_uniform_buffer_bindings;
+  GLint max_varying_components;
+  GLint max_vertex_output_components;
+  GLint max_vertex_uniform_blocks;
+  GLint max_vertex_uniform_components;
+  GLint min_program_texel_offset;
+  GLfloat aliased_line_width_range_min;
+  GLfloat aliased_line_width_range_max;
+  GLfloat aliased_point_size_range_min;
+  GLfloat aliased_point_size_range_max;
+  GLfloat max_texture_lod_bias;
+  GLint64 max_element_index;
+  GLint64 max_uniform_block_size;
+  GLint64 max_server_wait_timeout;
+  GLint64 max_combined_fragment_uniform_components;
+  GLint64 max_combined_vertex_uniform_components;
+};
+
+constexpr TanyaWebGLReference kTanyaIntelUhd = {
+    16384, 16384, 16384, 16384, 16384, 16, 4095, 16, 30, 32, 16, 1024,
+    2048, 2048, 8, 24, 8, 4096, 4096, 128, 12, 4096, 7, 8, 64, 4, 4, 24, 60,
+    64, 12, 16384, -8,
+    1.0f, 7.375f, 1.0f, 255.875f, 16.0f,
+    4294967294LL, 65536LL, 0LL, 211456LL, 245760LL,
+};
+
+constexpr TanyaWebGLReference kTanyaNvidiaGeforce = {
+    16384, 16384, 16384, 16384, 16384, 16, 4096, 32, 31, 32, 32, 1024,
+    16384, 2048, 8, 24, 8, 2147483647, 2147483647, 128, 12, 4096, 7, 32, 128,
+    4, 4, 84, 124, 128, 12, 16384, -8,
+    1.0f, 10.0f, 1.0f, 189.875f, 15.0f,
+    4294967294LL, 65536LL, 0LL, 204800LL, 245760LL,
+};
+
+constexpr TanyaWebGLReference kTanyaAppleSilicon = {
+    16384, 16384, 16384, 16384, 16384, 16, 1024, 16, 15, 16, 16, 1024,
+    2048, 2048, 8, 72, 8, 150000, 150000, 124, 14, 4096, 7, 8, 128, 4, 4, 64,
+    124, 124, 14, 4096, -8,
+    1.0f, 1.0f, 1.0f, 511.0f, 16.0f,
+    4294967294LL, 65536LL, 0LL, 204800LL, 229376LL,
+};
+
+constexpr TanyaWebGLReference kTanyaMsbrd = {
+    16384, 16384, 16384, 16384, 16384, 16, 4096, 16, 30, 32, 16, 1024,
+    2048, 2048, 8, 24, 8, 4096, 4096, 128, 12, 4096, 7, 8, 64, 4, 4, 24, 60,
+    64, 12, 16384, -8,
+    1.0f, 1.0f, 1.0f, 255.875f, 16.0f,
+    4294967294LL, 65536LL, 0LL, 211456LL, 245760LL,
+};
+
+constexpr TanyaWebGLReference kTanyaAdrenoMobile = {
+    16384, 16384, 16384, 16384, 16384, 16, 256, 16, 31, 32, 16, 224,
+    16384, 2048, 8, 30, 8, 1048576, 1048576, 124, 14, 896, 7, 4, 64, 4, 4, 72,
+    124, 124, 14, 1024, -8,
+    1.0f, 1.0f, 1.0f, 2047.0f, 15.0f,
+    4294967294LL, 65536LL, 0LL, 229376LL, 229376LL,
+};
+
+const TanyaWebGLReference* TanyaMatchWebGLReference(
+    const std::string& renderer) {
+  std::string r;
+  r.reserve(renderer.size());
+  for (char c : renderer) {
+    if (c >= 'A' && c <= 'Z') {
+      c = static_cast<char>(c + ('a' - 'A'));
+    }
+    r.push_back(c);
+  }
+  if (r.find("microsoft basic render") != std::string::npos ||
+      r.find("microsoft basic display") != std::string::npos ||
+      r.find("msbrd") != std::string::npos) {
+    return &kTanyaMsbrd;
+  }
+  if (r.find("adreno") != std::string::npos ||
+      r.find("mali") != std::string::npos ||
+      r.find("powervr") != std::string::npos ||
+      r.find("immortalis") != std::string::npos) {
+    return &kTanyaAdrenoMobile;
+  }
+  if (r.find("apple") != std::string::npos &&
+      (r.find("apple m") != std::string::npos ||
+       r.find("metal") != std::string::npos)) {
+    return &kTanyaAppleSilicon;
+  }
+  if (r.find("nvidia") != std::string::npos ||
+      r.find("geforce") != std::string::npos) {
+    return &kTanyaNvidiaGeforce;
+  }
+  if (r.find("intel") != std::string::npos &&
+      (r.find("uhd") != std::string::npos ||
+       r.find("hd graphics") != std::string::npos ||
+       r.find("iris") != std::string::npos)) {
+    return &kTanyaIntelUhd;
+  }
+  return nullptr;
+}
+
+bool TanyaLookupWebGLIntParam(const TanyaWebGLReference& ref,
+                              GLenum pname,
+                              GLint* out_value) {
+  switch (pname) {
+    case GL_MAX_TEXTURE_SIZE:
+      *out_value = ref.max_texture_size;
+      return true;
+    case GL_MAX_CUBE_MAP_TEXTURE_SIZE:
+      *out_value = ref.max_cube_map_texture_size;
+      return true;
+    case GL_MAX_RENDERBUFFER_SIZE:
+      *out_value = ref.max_renderbuffer_size;
+      return true;
+    case GL_MAX_VERTEX_ATTRIBS:
+      *out_value = ref.max_vertex_attribs;
+      return true;
+    case GL_MAX_VERTEX_UNIFORM_VECTORS:
+      *out_value = ref.max_vertex_uniform_vectors;
+      return true;
+    case GL_MAX_VERTEX_TEXTURE_IMAGE_UNITS:
+      *out_value = ref.max_vertex_texture_image_units;
+      return true;
+    case GL_MAX_VARYING_VECTORS:
+      *out_value = ref.max_varying_vectors;
+      return true;
+    case GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS:
+      *out_value = ref.max_combined_texture_image_units;
+      return true;
+    case GL_MAX_TEXTURE_IMAGE_UNITS:
+      *out_value = ref.max_texture_image_units;
+      return true;
+    case GL_MAX_FRAGMENT_UNIFORM_VECTORS:
+      *out_value = ref.max_fragment_uniform_vectors;
+      return true;
+    case GL_MAX_3D_TEXTURE_SIZE:
+      *out_value = ref.max_3d_texture_size;
+      return true;
+    case GL_MAX_ARRAY_TEXTURE_LAYERS:
+      *out_value = ref.max_array_texture_layers;
+      return true;
+    case GL_MAX_COLOR_ATTACHMENTS:
+      *out_value = ref.max_color_attachments;
+      return true;
+    case GL_MAX_COMBINED_UNIFORM_BLOCKS:
+      *out_value = ref.max_combined_uniform_blocks;
+      return true;
+    case GL_MAX_DRAW_BUFFERS:
+      *out_value = ref.max_draw_buffers;
+      return true;
+    case GL_MAX_ELEMENTS_INDICES:
+      *out_value = ref.max_elements_indices;
+      return true;
+    case GL_MAX_ELEMENTS_VERTICES:
+      *out_value = ref.max_elements_vertices;
+      return true;
+    case GL_MAX_FRAGMENT_INPUT_COMPONENTS:
+      *out_value = ref.max_fragment_input_components;
+      return true;
+    case GL_MAX_FRAGMENT_UNIFORM_BLOCKS:
+      *out_value = ref.max_fragment_uniform_blocks;
+      return true;
+    case GL_MAX_FRAGMENT_UNIFORM_COMPONENTS:
+      *out_value = ref.max_fragment_uniform_components;
+      return true;
+    case GL_MAX_PROGRAM_TEXEL_OFFSET:
+      *out_value = ref.max_program_texel_offset;
+      return true;
+    case GL_MAX_SAMPLES:
+      *out_value = ref.max_samples;
+      return true;
+    case GL_MAX_TRANSFORM_FEEDBACK_INTERLEAVED_COMPONENTS:
+      *out_value = ref.max_transform_feedback_interleaved_components;
+      return true;
+    case GL_MAX_TRANSFORM_FEEDBACK_SEPARATE_ATTRIBS:
+      *out_value = ref.max_transform_feedback_separate_attribs;
+      return true;
+    case GL_MAX_TRANSFORM_FEEDBACK_SEPARATE_COMPONENTS:
+      *out_value = ref.max_transform_feedback_separate_components;
+      return true;
+    case GL_MAX_UNIFORM_BUFFER_BINDINGS:
+      *out_value = ref.max_uniform_buffer_bindings;
+      return true;
+    case GL_MAX_VARYING_COMPONENTS:
+      *out_value = ref.max_varying_components;
+      return true;
+    case GL_MAX_VERTEX_OUTPUT_COMPONENTS:
+      *out_value = ref.max_vertex_output_components;
+      return true;
+    case GL_MAX_VERTEX_UNIFORM_BLOCKS:
+      *out_value = ref.max_vertex_uniform_blocks;
+      return true;
+    case GL_MAX_VERTEX_UNIFORM_COMPONENTS:
+      *out_value = ref.max_vertex_uniform_components;
+      return true;
+    case GL_MIN_PROGRAM_TEXEL_OFFSET:
+      *out_value = ref.min_program_texel_offset;
+      return true;
+    default:
+      return false;
+  }
+}
+
+bool TanyaLookupWebGLFloatParam(const TanyaWebGLReference& ref,
+                                GLenum pname,
+                                GLfloat* out_value) {
+  switch (pname) {
+    case GL_MAX_TEXTURE_LOD_BIAS:
+      *out_value = ref.max_texture_lod_bias;
+      return true;
+    default:
+      return false;
+  }
+}
+
+bool TanyaLookupWebGLInt64Param(const TanyaWebGLReference& ref,
+                                GLenum pname,
+                                GLint64* out_value) {
+  switch (pname) {
+    case GL_MAX_ELEMENT_INDEX:
+      *out_value = ref.max_element_index;
+      return true;
+    case GL_MAX_UNIFORM_BLOCK_SIZE:
+      *out_value = ref.max_uniform_block_size;
+      return true;
+    case GL_MAX_SERVER_WAIT_TIMEOUT:
+      *out_value = ref.max_server_wait_timeout;
+      return true;
+    case GL_MAX_COMBINED_FRAGMENT_UNIFORM_COMPONENTS:
+      *out_value = ref.max_combined_fragment_uniform_components;
+      return true;
+    case GL_MAX_COMBINED_VERTEX_UNIFORM_COMPONENTS:
+      *out_value = ref.max_combined_vertex_uniform_components;
+      return true;
+    default:
+      return false;
+  }
+}
+
+bool TanyaLookupWebGLFloatRange(const TanyaWebGLReference& ref,
+                                GLenum pname,
+                                GLfloat* out_min,
+                                GLfloat* out_max) {
+  switch (pname) {
+    case GL_ALIASED_LINE_WIDTH_RANGE:
+      *out_min = ref.aliased_line_width_range_min;
+      *out_max = ref.aliased_line_width_range_max;
+      return true;
+    case GL_ALIASED_POINT_SIZE_RANGE:
+      *out_min = ref.aliased_point_size_range_min;
+      *out_max = ref.aliased_point_size_range_max;
+      return true;
+    default:
+      return false;
+  }
+}
+
 class ReplaceNonASCII {
  public:
   ReplaceNonASCII(const String& str) { Parse(str); }
@@ -608,6 +893,19 @@ class ReplaceNonASCII {
 
 static bool g_should_fail_context_creation_for_testing = false;
 }  // namespace
+
+bool TanyaReplaceWebGLPixels(const char* context_kind,
+                             GLint x,
+                             GLint y,
+                             GLsizei width,
+                             GLsizei height,
+                             GLsizei canvas_width,
+                             GLsizei canvas_height,
+                             GLenum format,
+                             GLenum type,
+                             void* data,
+                             size_t data_byte_size,
+                             const std::string& device_model);
 
 // This class interrupts any active pixel local storage rendering pass, if the
 // extension has been used by the context.
@@ -3992,6 +4290,42 @@ ScriptValue WebGLRenderingContextBase::getParameter(ScriptState* script_state,
                                                     GLenum pname) {
   if (isContextLost())
     return ScriptValue::CreateNull(script_state->GetIsolate());
+
+  {
+    const fingerprint::FingerprintPolicy& tp =
+        fingerprint::FingerprintPolicy::ProcessDefault();
+    if (tp.SurfaceActive("canvasWebgl") && !tp.IsSurfaceDisabled("webgl")) {
+      const char* key = nullptr;
+      switch (pname) {
+        case GL_MAX_TEXTURE_SIZE: key = "MAX_TEXTURE_SIZE"; break;
+        case GL_MAX_CUBE_MAP_TEXTURE_SIZE:
+          key = "MAX_CUBE_MAP_TEXTURE_SIZE"; break;
+        case GL_MAX_RENDERBUFFER_SIZE: key = "MAX_RENDERBUFFER_SIZE"; break;
+        case GL_MAX_VERTEX_ATTRIBS: key = "MAX_VERTEX_ATTRIBS"; break;
+        case GL_MAX_VERTEX_UNIFORM_VECTORS:
+          key = "MAX_VERTEX_UNIFORM_VECTORS"; break;
+        case GL_MAX_VARYING_VECTORS: key = "MAX_VARYING_VECTORS"; break;
+        case GL_MAX_FRAGMENT_UNIFORM_VECTORS:
+          key = "MAX_FRAGMENT_UNIFORM_VECTORS"; break;
+        case GL_MAX_TEXTURE_IMAGE_UNITS: key = "MAX_TEXTURE_IMAGE_UNITS"; break;
+        case GL_MAX_VERTEX_TEXTURE_IMAGE_UNITS:
+          key = "MAX_VERTEX_TEXTURE_IMAGE_UNITS"; break;
+        case GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS:
+          key = "MAX_COMBINED_TEXTURE_IMAGE_UNITS"; break;
+        case GL_SUBPIXEL_BITS: key = "SUBPIXEL_BITS"; break;
+        default: break;
+      }
+      if (key) {
+        if (const base::DictValue* params =
+                tp.GetSurfaceDict("canvasWebgl", "parameters")) {
+          if (std::optional<int> iv = params->FindInt(key)) {
+            return WebGLAny(script_state, static_cast<GLint>(*iv));
+          }
+        }
+      }
+    }
+  }
+
   const int kIntZero = 0;
   switch (pname) {
     case GL_ACTIVE_TEXTURE:
@@ -4122,12 +4456,20 @@ ScriptValue WebGLRenderingContextBase::getParameter(ScriptState* script_state,
       return GetWebGLIntArrayParameter(script_state, pname);
     case GL_SCISSOR_TEST:
       return GetBooleanParameter(script_state, pname);
-    case GL_SHADING_LANGUAGE_VERSION:
+    case GL_SHADING_LANGUAGE_VERSION: {
+      const fingerprint::FingerprintPolicy& gl_policy =
+          fingerprint::FingerprintPolicy::ProcessDefault();
+      if (gl_policy.enabled() && !gl_policy.IsSurfaceDisabled("webgl")) {
+        return WebGLAny(
+            script_state,
+            String("WebGL GLSL ES 1.0 (OpenGL ES GLSL ES 1.0 Chromium)"));
+      }
       return WebGLAny(
           script_state,
           StrCat({"WebGL GLSL ES 1.0 (",
                   String(ContextGL()->GetString(GL_SHADING_LANGUAGE_VERSION)),
                   ")"}));
+    }
     case GL_STENCIL_BACK_FAIL:
       return GetUnsignedIntParameter(script_state, pname);
     case GL_STENCIL_BACK_FUNC:
@@ -4184,11 +4526,18 @@ ScriptValue WebGLRenderingContextBase::getParameter(ScriptState* script_state,
       return WebGLAny(script_state, unpack_colorspace_conversion_);
     case GL_VENDOR:
       return WebGLAny(script_state, String("WebKit"));
-    case GL_VERSION:
+    case GL_VERSION: {
+      const fingerprint::FingerprintPolicy& gl_policy =
+          fingerprint::FingerprintPolicy::ProcessDefault();
+      if (gl_policy.enabled() && !gl_policy.IsSurfaceDisabled("webgl")) {
+        return WebGLAny(script_state,
+                        String("WebGL 1.0 (OpenGL ES 2.0 Chromium)"));
+      }
       return WebGLAny(
           script_state,
           StrCat({"WebGL 1.0 (", String(ContextGL()->GetString(GL_VERSION)),
                   ")"}));
+    }
     case GL_VIEWPORT:
       return GetWebGLIntArrayParameter(script_state, pname);
     case GL_FRAGMENT_SHADER_DERIVATIVE_HINT_OES:  // OES_standard_derivatives
@@ -4201,6 +4550,13 @@ ScriptValue WebGLRenderingContextBase::getParameter(ScriptState* script_state,
       return ScriptValue::CreateNull(script_state->GetIsolate());
     case WebGLDebugRendererInfo::kUnmaskedRendererWebgl:
       if (ExtensionEnabled(kWebGLDebugRendererInfoName)) {
+        const fingerprint::FingerprintPolicy& policy =
+            fingerprint::FingerprintPolicy::ProcessDefault();
+        if (policy.enabled() && !policy.IsSurfaceDisabled("gpu") &&
+            !policy.gpu_renderer().empty()) {
+          return WebGLAny(script_state,
+                          String::FromUtf8(policy.gpu_renderer()));
+        }
         return WebGLAny(script_state,
                         String(ContextGL()->GetString(GL_RENDERER)));
       }
@@ -4210,6 +4566,13 @@ ScriptValue WebGLRenderingContextBase::getParameter(ScriptState* script_state,
       return ScriptValue::CreateNull(script_state->GetIsolate());
     case WebGLDebugRendererInfo::kUnmaskedVendorWebgl:
       if (ExtensionEnabled(kWebGLDebugRendererInfoName)) {
+        const fingerprint::FingerprintPolicy& policy =
+            fingerprint::FingerprintPolicy::ProcessDefault();
+        if (policy.enabled() && !policy.IsSurfaceDisabled("gpu") &&
+            !policy.gpu_vendor().empty()) {
+          return WebGLAny(script_state,
+                          String::FromUtf8(policy.gpu_vendor()));
+        }
         return WebGLAny(script_state,
                         String(ContextGL()->GetString(GL_VENDOR)));
       }
@@ -4525,6 +4888,23 @@ std::optional<Vector<String>>
 WebGLRenderingContextBase::getSupportedExtensions() {
   if (isContextLost())
     return std::nullopt;
+
+  const fingerprint::FingerprintPolicy& tp =
+      fingerprint::FingerprintPolicy::ProcessDefault();
+  if (tp.SurfaceActive("canvasWebgl") && !tp.IsSurfaceDisabled("webgl")) {
+    const char* tanya_ext_key =
+        IsWebGL2() ? "extensionsGl2" : "extensionsGl1";
+    if (const base::ListValue* ext =
+            tp.GetSurfaceList("canvasWebgl", tanya_ext_key)) {
+      Vector<String> injected;
+      for (const base::Value& e : *ext) {
+        if (const std::string* s = e.GetIfString()) {
+          injected.push_back(String::FromUtf8(*s));
+        }
+      }
+      return injected;
+    }
+  }
 
   Vector<String> result;
 
@@ -5357,6 +5737,52 @@ void WebGLRenderingContextBase::ReadPixelsHelper(GLint x,
     }
     ContextGL()->ReadPixels(x, y, width, height, format, type, data);
   }
+  if (data && width > 0 && height > 0) {
+    const fingerprint::FingerprintPolicy& policy =
+        fingerprint::FingerprintPolicy::ProcessDefault();
+    if (policy.enabled() && policy.has_surface("canvasWebgl") &&
+        !policy.IsSurfaceDisabled("webgl")) {
+      const char* kind = IsWebGL2() ? "webgl2" : "webgl";
+      if (TanyaReplaceWebGLPixels(kind, x, y, width, height,
+                                  drawingBufferWidth(), drawingBufferHeight(),
+                                  format, type, data, buffer_size.ValueOrDie(),
+                                  policy.device_model())) {
+        return;
+      }
+    }
+  }
+}
+
+bool TanyaReplaceWebGLPixels(const char* context_kind,
+                             GLint x,
+                             GLint y,
+                             GLsizei width,
+                             GLsizei height,
+                             GLsizei canvas_width,
+                             GLsizei canvas_height,
+                             GLenum format,
+                             GLenum type,
+                             void* data,
+                             size_t data_byte_size,
+                             const std::string& device_model) {
+  const fingerprint::FingerprintPolicy& policy =
+      fingerprint::FingerprintPolicy::ProcessDefault();
+  const char* key =
+      (context_kind && std::string(context_kind) == "webgl2") ? "pixels2Raw"
+                                                              : "pixelsRaw";
+  const base::ListValue* raw = policy.GetSurfaceList("canvasWebgl", key);
+  if (!raw || raw->empty()) {
+    return false;
+  }
+  if (raw->size() > data_byte_size) {
+    return false;
+  }
+  uint8_t* out = static_cast<uint8_t*>(data);
+  const size_t n = raw->size();
+  for (size_t i = 0; i < n; ++i) {
+    out[i] = static_cast<uint8_t>((*raw)[i].GetIfInt().value_or(0) & 0xFF);
+  }
+  return true;
 }
 
 void WebGLRenderingContextBase::RenderbufferStorageImpl(
@@ -7904,6 +8330,19 @@ ScriptValue WebGLRenderingContextBase::GetBooleanArrayParameter(
 ScriptValue WebGLRenderingContextBase::GetFloatParameter(
     ScriptState* script_state,
     GLenum pname) {
+  const fingerprint::FingerprintPolicy& policy =
+      fingerprint::FingerprintPolicy::ProcessDefault();
+  if (policy.enabled() && !policy.IsSurfaceDisabled("gpu")) {
+    const std::string& renderer = policy.gpu_renderer();
+    if (!renderer.empty()) {
+      if (const TanyaWebGLReference* ref = TanyaMatchWebGLReference(renderer)) {
+        GLfloat spoofed = 0;
+        if (TanyaLookupWebGLFloatParam(*ref, pname, &spoofed)) {
+          return WebGLAny(script_state, spoofed);
+        }
+      }
+    }
+  }
   GLfloat value = 0;
   if (!isContextLost()) {
     ContextGL()->GetFloatv(pname, &value);
@@ -7914,6 +8353,19 @@ ScriptValue WebGLRenderingContextBase::GetFloatParameter(
 ScriptValue WebGLRenderingContextBase::GetIntParameter(
     ScriptState* script_state,
     GLenum pname) {
+  const fingerprint::FingerprintPolicy& policy =
+      fingerprint::FingerprintPolicy::ProcessDefault();
+  if (policy.enabled() && !policy.IsSurfaceDisabled("gpu")) {
+    const std::string& renderer = policy.gpu_renderer();
+    if (!renderer.empty()) {
+      if (const TanyaWebGLReference* ref = TanyaMatchWebGLReference(renderer)) {
+        GLint spoofed = 0;
+        if (TanyaLookupWebGLIntParam(*ref, pname, &spoofed)) {
+          return WebGLAny(script_state, spoofed);
+        }
+      }
+    }
+  }
   GLint value = 0;
   if (!isContextLost()) {
     ContextGL()->GetIntegerv(pname, &value);
@@ -7936,6 +8388,19 @@ ScriptValue WebGLRenderingContextBase::GetIntParameter(
 ScriptValue WebGLRenderingContextBase::GetInt64Parameter(
     ScriptState* script_state,
     GLenum pname) {
+  const fingerprint::FingerprintPolicy& policy =
+      fingerprint::FingerprintPolicy::ProcessDefault();
+  if (policy.enabled() && !policy.IsSurfaceDisabled("gpu")) {
+    const std::string& renderer = policy.gpu_renderer();
+    if (!renderer.empty()) {
+      if (const TanyaWebGLReference* ref = TanyaMatchWebGLReference(renderer)) {
+        GLint64 spoofed = 0;
+        if (TanyaLookupWebGLInt64Param(*ref, pname, &spoofed)) {
+          return WebGLAny(script_state, spoofed);
+        }
+      }
+    }
+  }
   GLint64 value = 0;
   if (!isContextLost())
     ContextGL()->GetInteger64v(pname, &value);
@@ -7971,6 +8436,24 @@ ScriptValue WebGLRenderingContextBase::GetWebGLFloatArrayParameter(
     default:
       NOTIMPLEMENTED();
   }
+  if (pname == GL_ALIASED_LINE_WIDTH_RANGE ||
+      pname == GL_ALIASED_POINT_SIZE_RANGE) {
+    const fingerprint::FingerprintPolicy& policy =
+        fingerprint::FingerprintPolicy::ProcessDefault();
+    if (policy.enabled() && !policy.IsSurfaceDisabled("gpu")) {
+      const std::string& renderer = policy.gpu_renderer();
+      if (!renderer.empty()) {
+        if (const TanyaWebGLReference* ref =
+                TanyaMatchWebGLReference(renderer)) {
+          GLfloat lo = 0, hi = 0;
+          if (TanyaLookupWebGLFloatRange(*ref, pname, &lo, &hi)) {
+            value[0] = lo;
+            value[1] = hi;
+          }
+        }
+      }
+    }
+  }
   return WebGLAny(script_state,
                   DOMFloat32Array::Create(base::span(value).first(length)));
 }
@@ -7992,6 +8475,20 @@ ScriptValue WebGLRenderingContextBase::GetWebGLIntArrayParameter(
       break;
     default:
       NOTIMPLEMENTED();
+  }
+  if (pname == GL_MAX_VIEWPORT_DIMS) {
+    const fingerprint::FingerprintPolicy& policy =
+        fingerprint::FingerprintPolicy::ProcessDefault();
+    if (policy.enabled() && !policy.IsSurfaceDisabled("gpu")) {
+      const std::string& renderer = policy.gpu_renderer();
+      if (!renderer.empty()) {
+        if (const TanyaWebGLReference* ref =
+                TanyaMatchWebGLReference(renderer)) {
+          value[0] = ref->max_viewport_dim_x;
+          value[1] = ref->max_viewport_dim_y;
+        }
+      }
+    }
   }
   return WebGLAny(script_state,
                   DOMInt32Array::Create(base::span(value).first(length)));

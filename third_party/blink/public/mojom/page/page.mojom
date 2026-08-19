@@ -4,6 +4,7 @@
 
 module blink.mojom;
 
+import "mojo/public/mojom/base/big_buffer.mojom";
 import "mojo/public/mojom/base/time.mojom";
 import "mojo/public/mojom/base/unguessable_token.mojom";
 import "skia/public/mojom/skcolor.mojom";
@@ -127,6 +128,8 @@ interface PageBroadcast {
 
   // Updates renderer preferences.
   UpdateRendererPreferences(blink.mojom.RendererPreferences preferences);
+
+  UpdateTanyaFingerprintProfile(mojo_base.mojom.BigBuffer profile);
 
   // Set history index and length.
   SetHistoryIndexAndLength(int32 index, int32 length);

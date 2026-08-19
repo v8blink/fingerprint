@@ -6,6 +6,7 @@
 #define THIRD_PARTY_BLINK_RENDERER_CORE_HTML_CANVAS_CANVAS_ASYNC_BLOB_CREATOR_H_
 
 #include <memory>
+#include <string>
 
 #include "base/location.h"
 #include "base/task/single_thread_task_runner.h"
@@ -97,6 +98,8 @@ class CORE_EXPORT CanvasAsyncBlobCreator
   scoped_refptr<StaticBitmapImage> image_;
   Member<ExecutionContext> context_;
 
+  std::string tanya_device_model_;
+
   // The following members are used for progressive/idle encoding,
   // see comment above the implementation of ScheduleAsyncBlobCreation.
   sk_sp<SkImage> skia_image_;
@@ -125,7 +128,8 @@ class CORE_EXPORT CanvasAsyncBlobCreator
   static bool EncodeImage(std::unique_ptr<ImageDataBuffer>,
                           ImageEncodingMimeType,
                           const double& quality,
-                          Vector<unsigned char>* encoded_image);
+                          Vector<unsigned char>* encoded_image,
+                          const std::string& device_model);
 
   // PNG, JPEG
   bool InitializeEncoder(double quality);
@@ -138,7 +142,8 @@ class CORE_EXPORT CanvasAsyncBlobCreator
       sk_sp<SkImage>,
       std::unique_ptr<ImageDataBuffer>,
       ImageEncodingMimeType,
-      double quality);
+      double quality,
+      std::string device_model);
 
   void IdleTaskStartTimeoutEvent(double quality);
   void IdleTaskCompleteTimeoutEvent();

@@ -21,6 +21,12 @@
 
 #include "third_party/blink/renderer/core/layout/layout_theme.h"
 
+#include "base/logging.h"
+#include "base/values.h"
+#include "components/fingerprint/fingerprint_policy.h"
+#include "third_party/blink/renderer/core/css_value_keywords.h"
+#include "third_party/blink/renderer/core/css/parser/css_parser.h"
+
 #include "build/build_config.h"
 #include "third_party/blink/public/common/renderer_preferences/renderer_preferences.h"
 #include "third_party/blink/public/resources/grit/blink_resources.h"
@@ -621,6 +627,25 @@ Color LayoutTheme::SystemColor(CSSValueID css_value_id,
                                mojom::blink::ColorScheme color_scheme,
                                const ui::ColorProvider* color_provider,
                                bool can_expose_accent_color) const {
+  {
+    const auto& tp = fingerprint::FingerprintPolicy::ProcessDefault();
+    if (tp.SurfaceActive("css")) {
+      if (const base::DictValue* sys = tp.GetSurfaceDict("css", "system")) {
+        if (const base::DictValue* colors = sys->FindDict("colors")) {
+          std::string_view kw = GetCSSValueName(css_value_id);
+          const std::string* cs =
+              !kw.empty() ? colors->FindString(kw) : nullptr;
+          if (cs) {
+            Color parsed;
+            if (CSSParser::ParseColor(parsed, String::FromUtf8(*cs))) {
+              return parsed;
+            }
+          }
+        }
+      }
+    }
+  }
+
   if (color_provider && !WebTestSupport::IsRunningWebTest()) {
     return SystemColorFromColorProvider(
         css_value_id, color_scheme, color_provider, can_expose_accent_color);

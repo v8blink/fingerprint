@@ -44,6 +44,10 @@
 #include "build/build_config.h"
 #include "cc/layers/picture_layer.h"
 #include "components/viz/common/features.h"
+#include "base/containers/span.h"
+#include "base/logging.h"
+#include "components/fingerprint/fingerprint_policy.h"
+#include "mojo/public/cpp/base/big_buffer.h"
 #include "media/base/media_switches.h"
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
 #include "third_party/blink/public/common/features.h"
@@ -141,6 +145,7 @@
 #include "third_party/blink/renderer/core/input/event_handler.h"
 #include "third_party/blink/renderer/core/input/touch_action_util.h"
 #include "third_party/blink/renderer/core/inspector/dev_tools_emulator.h"
+#include "third_party/blink/renderer/core/inspector/locale_controller.h"
 #include "third_party/blink/renderer/core/layout/layout_embedded_content.h"
 #include "third_party/blink/renderer/core/layout/layout_view.h"
 #include "third_party/blink/renderer/core/loader/document_loader.h"
@@ -3754,6 +3759,21 @@ void WebViewImpl::SetRendererPreferences(
 
 const RendererPreferences& WebViewImpl::GetRendererPreferences() const {
   return renderer_preferences_;
+}
+
+void WebViewImpl::UpdateTanyaFingerprintProfile(mojo_base::BigBuffer profile) {
+  base::span<const uint8_t> bytes(profile.data(), profile.size());
+  fingerprint::FingerprintPolicy policy =
+      fingerprint::FingerprintPolicy::FromProfileJson(bytes);
+  const bool enabled = policy.enabled();
+  std::optional<std::string> intl_locale =
+      policy.GetSurfaceString("intl", "locale");
+  fingerprint::FingerprintPolicy::SetProcessDefaultForRenderer(
+      std::move(policy));
+  if (enabled && intl_locale && !intl_locale->empty()) {
+    LocaleController::instance().SetLocaleOverride(
+        String::FromUtf8(*intl_locale), false);
+  }
 }
 
 void WebViewImpl::UpdateRendererPreferences(

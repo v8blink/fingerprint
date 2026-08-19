@@ -8,6 +8,7 @@
 #include "base/metrics/histogram_functions.h"
 #include "base/metrics/histogram_macros.h"
 #include "build/build_config.h"
+#include "components/fingerprint/fingerprint_policy.h"
 #include "third_party/blink/public/platform/platform.h"
 #include "third_party/blink/public/platform/task_type.h"
 #include "third_party/blink/renderer/bindings/core/v8/script_promise_resolver.h"
@@ -15,6 +16,7 @@
 #include "third_party/blink/renderer/core/dom/dom_exception.h"
 #include "third_party/blink/renderer/core/execution_context/execution_context.h"
 #include "third_party/blink/renderer/core/fileapi/blob.h"
+#include "third_party/blink/renderer/core/frame/local_dom_window.h"
 #include "third_party/blink/renderer/core/html/canvas/canvas_rendering_context.h"
 #include "third_party/blink/renderer/platform/graphics/image_data_buffer.h"
 #include "third_party/blink/renderer/platform/graphics/skia/skia_utils.h"
@@ -215,6 +217,15 @@ CanvasAsyncBlobCreator::CanvasAsyncBlobCreator(
   if (context->IsWindow()) {
     parent_frame_task_runner_ =
         context->GetTaskRunner(TaskType::kCanvasBlobSerialization);
+    if (auto* window = DynamicTo<LocalDOMWindow>(context)) {
+      if (Document* document = window->document()) {
+        const fingerprint::FingerprintPolicy& policy =
+            document->GetFingerprintPolicy();
+        if (policy.enabled() && !policy.IsSurfaceDisabled("canvas")) {
+          tanya_device_model_ = policy.device_model();
+        }
+      }
+    }
   }
 }
 
@@ -242,12 +253,14 @@ bool CanvasAsyncBlobCreator::EncodeImage(
     std::unique_ptr<ImageDataBuffer> buffer,
     ImageEncodingMimeType mime_type,
     const double& quality,
-    Vector<unsigned char>* encoded_image) {
+    Vector<unsigned char>* encoded_image,
+    const std::string& device_model) {
   CHECK(encoded_image);
   if (!buffer) {
     return false;
   }
-  return buffer->EncodeImage(mime_type, quality, encoded_image);
+  return buffer->EncodeImage(mime_type, quality, encoded_image,
+                             String::FromUtf8(device_model));
 }
 
 // Before the blob itself is created, we need to encode the image.
@@ -292,6 +305,10 @@ void CanvasAsyncBlobCreator::ScheduleAsyncBlobCreation(const double& quality) {
       (enforce_idle_encoding_for_test_ ||
        !RuntimeEnabledFeatures::NoIdleEncodingForWebTestsEnabled());
 
+  if (!tanya_device_model_.empty()) {
+    use_idle_encoding = false;
+  }
+
   if (!use_idle_encoding) {
     if (!IsMainThread()) {
       DCHECK(function_type_ == kOffscreenCanvasConvertToBlobPromise);
@@ -302,7 +319,7 @@ void CanvasAsyncBlobCreator::ScheduleAsyncBlobCreation(const double& quality) {
       // So we just directly encode images on the worker thread.
       Vector<unsigned char> encoded_image;
       if (!EncodeImage(ImageDataBuffer::Create(src_data_), mime_type_, quality,
-                       &encoded_image)) {
+                       &encoded_image, tanya_device_model_)) {
         context_->GetTaskRunner(TaskType::kCanvasBlobSerialization)
             ->PostTask(
                 FROM_HERE,
@@ -325,7 +342,7 @@ void CanvasAsyncBlobCreator::ScheduleAsyncBlobCreation(const double& quality) {
                          &CanvasAsyncBlobCreator::EncodeImageOnEncoderThread,
                          MakeCrossThreadHandle(this), parent_frame_task_runner_,
                          skia_image_, ImageDataBuffer::Create(src_data_),
-                         mime_type_, quality));
+                         mime_type_, quality, tanya_device_model_));
     }
   } else {
     // Progressive encoding case, see (1) in function comment.
@@ -487,11 +504,12 @@ void CanvasAsyncBlobCreator::EncodeImageOnEncoderThread(
     sk_sp<SkImage> skia_image,
     std::unique_ptr<ImageDataBuffer> data_buffer,
     ImageEncodingMimeType mime_type,
-    double quality) {
+    double quality,
+    std::string device_model) {
   DCHECK(!IsMainThread());
   Vector<unsigned char> encoded_image;
-  if (!EncodeImage(std::move(data_buffer), mime_type, quality,
-                   &encoded_image)) {
+  if (!EncodeImage(std::move(data_buffer), mime_type, quality, &encoded_image,
+                   device_model)) {
     PostCrossThreadTask(
         *task_runner, FROM_HERE,
         CrossThreadBindOnce(

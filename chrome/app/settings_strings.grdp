@@ -993,6 +993,12 @@
     <message name="IDS_SETTINGS_DOWNLOADS" desc="Name of the settings page which displays download preferences.">
       Downloads
     </message>
+    <message name="IDS_SETTINGS_FINGERPRINT_PAGE_TITLE" desc="Name of the Fingerprint settings page.">
+      Fingerprint
+    </message>
+    <message name="IDS_SETTINGS_FINGERPRINT_NEW_TAB" desc="Label for the per-row button that opens a new tab with the row's fingerprint.">
+      New Tab
+    </message>
     <message name="IDS_SETTINGS_DOWNLOAD_LOCATION" desc="Label for the input which allows the user to specify the default download directory." meaning="File location">
       Location
     </message>

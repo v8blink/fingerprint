@@ -66,6 +66,8 @@
 #include "chrome/browser/commerce/shopping_service_factory.h"
 #include "chrome/browser/consent_auditor/consent_auditor_factory.h"
 #include "chrome/browser/content_index/content_index_provider_factory.h"
+#include "chrome/browser/container/cookie_portability_service_factory.h"
+#include "chrome/browser/container/tab_session_applier_factory.h"
 #include "chrome/browser/content_settings/cookie_settings_factory.h"
 #include "chrome/browser/content_settings/host_content_settings_map_factory.h"
 #include "chrome/browser/context_hub/context_hub_service_factory.h"
@@ -1617,6 +1619,8 @@ void ChromeBrowserMainExtraPartsProfiles::
 
   WebDataServiceFactory::GetInstance();
   webrtc_event_logging::WebRtcEventLogManagerKeyedServiceFactory::GetInstance();
+  tab_container::CookiePortabilityServiceFactory::GetInstance();
+  tab_container::TabSessionApplierFactory::GetInstance();
 }
 
 void ChromeBrowserMainExtraPartsProfiles::PreProfileInit() {

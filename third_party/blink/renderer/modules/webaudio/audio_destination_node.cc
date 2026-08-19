@@ -25,6 +25,8 @@
 
 #include "third_party/blink/renderer/modules/webaudio/audio_destination_node.h"
 
+#include "base/strings/string_number_conversions.h"
+#include "components/fingerprint/fingerprint_policy.h"
 #include "third_party/blink/renderer/modules/webaudio/audio_destination_handler.h"
 #include "third_party/blink/renderer/modules/webaudio/audio_graph_tracer.h"
 
@@ -39,6 +41,17 @@ AudioDestinationHandler& AudioDestinationNode::GetAudioDestinationHandler()
 }
 
 uint32_t AudioDestinationNode::maxChannelCount() const {
+  const fingerprint::FingerprintPolicy& policy =
+      fingerprint::FingerprintPolicy::ProcessDefault();
+  if (policy.enabled() && !policy.IsSurfaceDisabled("audio")) {
+    const std::string& mc = policy.audio_max_channels();
+    if (!mc.empty()) {
+      unsigned v = 0;
+      if (base::StringToUint(mc, &v) && v > 0) {
+        return v;
+      }
+    }
+  }
   return GetAudioDestinationHandler().MaxChannelCount();
 }
 

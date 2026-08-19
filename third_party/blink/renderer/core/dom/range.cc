@@ -25,6 +25,8 @@
 
 #include "third_party/blink/renderer/core/dom/range.h"
 
+#include "base/values.h"
+#include "components/fingerprint/fingerprint_policy.h"
 #include "third_party/blink/renderer/core/display_lock/display_lock_document_state.h"
 #include "third_party/blink/renderer/core/display_lock/display_lock_utilities.h"
 #include "third_party/blink/renderer/core/dom/character_data.h"
@@ -1679,6 +1681,28 @@ void Range::expand(const String& unit, ExceptionState& exception_state) {
 }
 
 DOMRectList* Range::getClientRects() const {
+  {
+    const auto& tp = fingerprint::FingerprintPolicy::ProcessDefault();
+    if (tp.SurfaceActive("clientRects")) {
+      if (const base::ListValue* arr =
+              tp.GetSurfaceList("clientRects", "rangeClientRects")) {
+        if (!arr->empty()) {
+          static thread_local size_t idx = 0;
+          const base::DictValue* d = (*arr)[idx % arr->size()].GetIfDict();
+          ++idx;
+          if (d) {
+            Vector<gfx::RectF> injected;
+            injected.emplace_back(
+                static_cast<float>(d->FindDouble("x").value_or(0)),
+                static_cast<float>(d->FindDouble("y").value_or(0)),
+                static_cast<float>(d->FindDouble("width").value_or(0)),
+                static_cast<float>(d->FindDouble("height").value_or(0)));
+            return MakeGarbageCollected<DOMRectList>(injected);
+          }
+        }
+      }
+    }
+  }
   // TODO(crbug.com/1499981): This should be removed once synchronized scrolling
   // impact is understood.
   SyncScrollAttemptHeuristic::DidAccessScrollOffset();
@@ -1693,6 +1717,26 @@ DOMRectList* Range::getClientRects() const {
 }
 
 DOMRect* Range::getBoundingClientRect() const {
+  {
+    const auto& tp = fingerprint::FingerprintPolicy::ProcessDefault();
+    if (tp.SurfaceActive("clientRects")) {
+      if (const base::ListValue* arr =
+              tp.GetSurfaceList("clientRects", "rangeBoundingClientRect")) {
+        if (!arr->empty()) {
+          static thread_local size_t idx = 0;
+          const base::DictValue* d = (*arr)[idx % arr->size()].GetIfDict();
+          ++idx;
+          if (d) {
+            return DOMRect::FromRectF(gfx::RectF(
+                static_cast<float>(d->FindDouble("x").value_or(0)),
+                static_cast<float>(d->FindDouble("y").value_or(0)),
+                static_cast<float>(d->FindDouble("width").value_or(0)),
+                static_cast<float>(d->FindDouble("height").value_or(0))));
+          }
+        }
+      }
+    }
+  }
   // TODO(crbug.com/1499981): This should be removed once synchronized scrolling
   // impact is understood.
   SyncScrollAttemptHeuristic::DidAccessScrollOffset();

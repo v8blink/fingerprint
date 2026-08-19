@@ -1271,6 +1271,8 @@ class WebContents : public PageNavigator, public base::SupportsUserData {
   // Returns the settings which get passed to the renderer.
   virtual blink::RendererPreferences* GetMutableRendererPrefs() = 0;
 
+  virtual void SetTanyaFingerprintProfileJson(std::string json) {}
+
   // Tells the tab to close now. The tab will take care not to close until it's
   // out of nested run loops.
   virtual void Close() = 0;

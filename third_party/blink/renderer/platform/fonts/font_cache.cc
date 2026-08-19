@@ -29,6 +29,10 @@
 
 #include "third_party/blink/renderer/platform/fonts/font_cache.h"
 
+#include "base/logging.h"
+#include "base/values.h"
+#include "components/fingerprint/fingerprint_policy.h"
+
 #include <unicode/uscript.h>
 
 #include <limits>
@@ -198,6 +202,27 @@ const SimpleFontData* FontCache::FontDataFromFontPlatformData(
 bool FontCache::IsPlatformFamilyMatchAvailable(
     const FontDescription& font_description,
     const AtomicString& family) {
+  const auto& tp = fingerprint::FingerprintPolicy::ProcessDefault();
+  if (tp.SurfaceActive("fonts")) {
+    if (const base::ListValue* list =
+            tp.GetSurfaceList("fonts", "fontFaceLoadFonts")) {
+      const std::string fam = family.Utf8();
+      for (const base::Value& e : *list) {
+        const std::string* s = e.GetIfString();
+        if (!s) {
+          continue;
+        }
+        std::string n = *s;
+        if (n.size() >= 2 && n.front() == '"' && n.back() == '"') {
+          n = n.substr(1, n.size() - 2);
+        }
+        if (n == fam) {
+          return true;
+        }
+      }
+      return false;
+    }
+  }
   return GetFontPlatformData(
       font_description,
       FontFaceCreationParams(AdjustFamilyNameToAvoidUnsupportedFonts(family)),
@@ -207,11 +232,30 @@ bool FontCache::IsPlatformFamilyMatchAvailable(
 bool FontCache::IsPlatformFontUniqueNameMatchAvailable(
     const FontDescription& font_description,
     const AtomicString& unique_font_name) {
-  // Return early to avoid attempting fallback.
   if (unique_font_name.empty()) {
     return false;
   }
-
+  const auto& tp = fingerprint::FingerprintPolicy::ProcessDefault();
+  if (tp.SurfaceActive("fonts")) {
+    if (const base::ListValue* list =
+            tp.GetSurfaceList("fonts", "fontFaceLoadFonts")) {
+      const std::string fam = unique_font_name.Utf8();
+      for (const base::Value& e : *list) {
+        const std::string* s = e.GetIfString();
+        if (!s) {
+          continue;
+        }
+        std::string n = *s;
+        if (n.size() >= 2 && n.front() == '"' && n.back() == '"') {
+          n = n.substr(1, n.size() - 2);
+        }
+        if (n == fam) {
+          return true;
+        }
+      }
+      return false;
+    }
+  }
   return GetFontPlatformData(font_description,
                              FontFaceCreationParams(unique_font_name),
                              AlternateFontName::kLocalUniqueFace);

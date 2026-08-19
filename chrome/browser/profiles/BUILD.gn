@@ -639,6 +639,8 @@ source_set("profiles_extra_parts_impl") {
     "//chrome/browser/collaboration/messaging",
     "//chrome/browser/commerce",
     "//chrome/browser/consent_auditor",
+    "//chrome/browser/container:cookie_portability",
+    "//chrome/browser/container:tab_session_applier",
     "//chrome/browser/content_index",
     "//chrome/browser/content_settings:content_settings_factory",
     "//chrome/browser/context_hub",

@@ -116,7 +116,7 @@ class MODULES_EXPORT BaseAudioContext
   // https://webaudio.github.io/web-audio-api/#BaseAudioContext
   // Cannot be called from the audio thread.
   AudioDestinationNode* destination() const;
-  float sampleRate() const { return destination_handler_->SampleRate(); }
+  float sampleRate() const;
   double currentTime() const { return destination_handler_->CurrentTime(); }
   AudioListener* listener() { return listener_.Get(); }
   // Virtual so AudioContext::state() can add UseCounters.

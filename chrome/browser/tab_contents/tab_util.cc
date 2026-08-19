@@ -4,10 +4,16 @@
 
 #include "chrome/browser/tab_contents/tab_util.h"
 
+#include "base/supports_user_data.h"
+#include "base/unguessable_token.h"
 #include "chrome/browser/profiles/profile.h"
 #include "chrome/browser/ui/webui/chrome_web_ui_controller_factory.h"
+#include "content/public/browser/browser_context.h"
 #include "content/public/browser/browser_url_handler.h"
 #include "content/public/browser/site_instance.h"
+#include "content/public/browser/storage_partition.h"
+#include "content/public/browser/storage_partition_config.h"
+#include "content/public/browser/web_contents.h"
 #include "extensions/buildflags/buildflags.h"
 #include "url/gurl.h"
 
@@ -17,19 +23,32 @@
 
 using content::SiteInstance;
 
+namespace {
+
+const int kTanyaInitialStoragePartitionUserDataKey = 0;
+
+class TanyaInitialStoragePartitionUserData
+    : public base::SupportsUserData::Data {
+ public:
+  explicit TanyaInitialStoragePartitionUserData(std::string partition_id)
+      : partition_id_(std::move(partition_id)) {}
+  const std::string& partition_id() const { return partition_id_; }
+
+ private:
+  std::string partition_id_;
+};
+
+}
+
 namespace tab_util {
 
-scoped_refptr<SiteInstance> GetSiteInstanceForNewTab(Profile* profile,
-                                                     GURL url) {
-  // Rewrite the |url| if necessary, to ensure that the SiteInstance is
-  // associated with a |url| that will actually be loaded.  For example,
-  // |url| set to chrome://newtab/ might actually result in a navigation to a
-  // different URL like chrome://new-tab-page.
+scoped_refptr<SiteInstance> GetSiteInstanceForNewTab(
+    Profile* profile,
+    GURL url,
+    content::SiteInstance* source_site_instance) {
   content::BrowserURLHandler::GetInstance()->RewriteURLIfNecessary(&url,
                                                                    profile);
 
-  // If |url| is a WebUI or extension, we set the SiteInstance up front so that
-  // we don't end up with an extra process swap on the first navigation.
   if (ChromeWebUIControllerFactory::GetInstance()->UseWebUIForURL(profile, url))
     return SiteInstance::CreateForURL(profile, url);
 
@@ -40,15 +59,56 @@ scoped_refptr<SiteInstance> GetSiteInstanceForNewTab(Profile* profile,
     return SiteInstance::CreateForURL(profile, url);
 #endif
 
-  // We used to share the SiteInstance for same-site links opened in new tabs,
-  // to leverage the in-memory cache and reduce process creation.  It now
-  // appears that it is more useful to have such links open in a new process,
-  // so we create new tabs in a new BrowsingInstance.
-  // Create a new SiteInstance for the |url| unless it is not desirable.
-  if (!SiteInstance::ShouldAssignSiteForURL(url))
-    return nullptr;
+  if (source_site_instance) {
+    content::StoragePartition* source_partition =
+        profile->GetStoragePartition(source_site_instance);
+    if (source_partition &&
+        source_partition->GetConfig().partition_name().starts_with(
+            "tab_partition_")) {
+      return SiteInstance::CreateForFixedStoragePartition(
+          profile, url, source_partition->GetConfig());
+    }
+  }
 
-  return SiteInstance::CreateForURL(profile, url);
+  const std::string partition_name =
+      "tab_partition_" + base::UnguessableToken::Create().ToString();
+  const content::StoragePartitionConfig partition_config =
+      content::StoragePartitionConfig::Create(profile, "tab_container",
+                                              partition_name,
+                                              profile->IsOffTheRecord());
+  return SiteInstance::CreateForFixedStoragePartition(profile, url,
+                                                      partition_config);
+}
+
+void RecordTanyaInitialStoragePartitionOnWebContents(
+    content::WebContents* contents,
+    content::SiteInstance* site_instance_from_create) {
+  if (!contents || !site_instance_from_create) {
+    return;
+  }
+  content::StoragePartition* partition =
+      contents->GetBrowserContext()->GetStoragePartition(
+          site_instance_from_create);
+  if (!partition) {
+    return;
+  }
+  const std::string& partition_name = partition->GetConfig().partition_name();
+  if (!partition_name.starts_with("tab_partition_")) {
+    return;
+  }
+  contents->SetUserData(
+      &kTanyaInitialStoragePartitionUserDataKey,
+      std::make_unique<TanyaInitialStoragePartitionUserData>(partition_name));
+}
+
+std::string GetTanyaInitialStoragePartitionIdIfRecorded(
+    const content::WebContents* contents) {
+  if (!contents) {
+    return std::string();
+  }
+  auto* data = static_cast<TanyaInitialStoragePartitionUserData*>(
+      contents->GetUserData(&kTanyaInitialStoragePartitionUserDataKey));
+  return data ? data->partition_id() : std::string();
 }
 
 }  // namespace tab_util

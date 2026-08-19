@@ -1,0 +1,15 @@
+source_set("tanya_fingerprint") {
+  sources = [
+    "version_shim_renderer_extension.cc",
+    "version_shim_renderer_extension.h",
+  ]
+
+  deps = [
+    "//base",
+    "//components/fingerprint",
+    "//components/version_info",
+    "//content/public/renderer",
+    "//third_party/blink/public:blink_headers",
+    "//v8",
+  ]
+}

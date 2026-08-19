@@ -332,6 +332,10 @@ function createRoutes(): SettingsRoutes {
         loadTimeData.getString('performancePageTitle'));
   }
 
+  r.FINGERPRINT = r.BASIC.createSection(
+      '/fingerprint', 'fingerprint',
+      loadTimeData.getString('fingerprintPageTitle'));
+
   return r as unknown as SettingsRoutes;
 }
 

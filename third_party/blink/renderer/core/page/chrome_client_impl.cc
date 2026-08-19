@@ -72,6 +72,7 @@
 #include "third_party/blink/renderer/core/exported/web_dev_tools_agent_impl.h"
 #include "third_party/blink/renderer/core/exported/web_plugin_container_impl.h"
 #include "third_party/blink/renderer/core/exported/web_settings_impl.h"
+#include "third_party/blink/public/common/renderer_preferences/renderer_preferences.h"
 #include "third_party/blink/renderer/core/exported/web_view_impl.h"
 #include "third_party/blink/renderer/core/frame/browser_controls.h"
 #include "third_party/blink/renderer/core/frame/local_dom_window.h"
@@ -1582,6 +1583,13 @@ gfx::Rect ChromeClientImpl::AdjustWindowRectForDisplay(
 
 void ChromeClientImpl::OnFirstContentfulPaint(const base::TimeDelta& duration) {
   web_view_->OnFirstContentfulPaint(duration);
+}
+
+const fingerprint::FingerprintPolicy& ChromeClientImpl::GetFingerprintPolicy()
+    const {
+  if (web_view_) {
+  }
+  return fingerprint::FingerprintPolicy::ProcessDefault();
 }
 
 }  // namespace blink

@@ -11,9 +11,11 @@
 #include "base/metrics/histogram_functions.h"
 #include "base/metrics/histogram_macros.h"
 #include "base/strings/strcat.h"
+#include "base/strings/string_number_conversions.h"
 #include "base/strings/to_string.h"
 #include "base/trace_event/trace_event.h"
 #include "build/build_config.h"
+#include "components/fingerprint/fingerprint_policy.h"
 #include "media/audio/audio_device_description.h"
 #include "media/base/output_device_info.h"
 #include "services/metrics/public/cpp/ukm_builders.h"
@@ -1267,6 +1269,17 @@ double AudioContext::baseLatency() const {
   DCHECK_CALLED_ON_VALID_SEQUENCE(main_thread_sequence_checker_);
   DCHECK(destination());
 
+  const fingerprint::FingerprintPolicy& policy =
+      fingerprint::FingerprintPolicy::ProcessDefault();
+  if (policy.enabled() && !policy.IsSurfaceDisabled("audio")) {
+    const std::string& bl = policy.audio_base_latency();
+    if (!bl.empty()) {
+      double v = 0;
+      if (base::StringToDouble(bl, &v) && v >= 0) {
+        return v;
+      }
+    }
+  }
   return base_latency_;
 }
 
@@ -1274,6 +1287,17 @@ double AudioContext::outputLatency() const {
   DCHECK_CALLED_ON_VALID_SEQUENCE(main_thread_sequence_checker_);
   DCHECK(destination());
 
+  const fingerprint::FingerprintPolicy& policy =
+      fingerprint::FingerprintPolicy::ProcessDefault();
+  if (policy.enabled() && !policy.IsSurfaceDisabled("audio")) {
+    const std::string& ol = policy.audio_output_latency();
+    if (!ol.empty()) {
+      double v = 0;
+      if (base::StringToDouble(ol, &v) && v >= 0) {
+        return v;
+      }
+    }
+  }
   DeferredTaskHandler::GraphAutoLocker locker(GetDeferredTaskHandler());
 
   double factor = GetOutputLatencyQuantizingFactor();

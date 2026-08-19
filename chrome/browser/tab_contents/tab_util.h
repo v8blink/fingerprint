@@ -5,16 +5,30 @@
 #ifndef CHROME_BROWSER_TAB_CONTENTS_TAB_UTIL_H_
 #define CHROME_BROWSER_TAB_CONTENTS_TAB_UTIL_H_
 
+#include <string>
+
 #include "content/public/browser/site_instance.h"
 #include "url/gurl.h"
 
 class Profile;
 
+namespace content {
+class WebContents;
+}
+
 namespace tab_util {
 
 // Returns a new SiteInstance for WebUI and app URLs. Returns NULL otherwise.
-scoped_refptr<content::SiteInstance> GetSiteInstanceForNewTab(Profile* profile,
-                                                              GURL url);
+scoped_refptr<content::SiteInstance> GetSiteInstanceForNewTab(
+    Profile* profile,
+    GURL url,
+    content::SiteInstance* source_site_instance = nullptr);
+
+void RecordTanyaInitialStoragePartitionOnWebContents(
+    content::WebContents* contents,
+    content::SiteInstance* site_instance_from_create);
+std::string GetTanyaInitialStoragePartitionIdIfRecorded(
+    const content::WebContents* contents);
 
 }  // namespace tab_util
 

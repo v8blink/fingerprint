@@ -4,6 +4,10 @@
 
 #include "third_party/blink/renderer/modules/permissions/permissions.h"
 
+#include "base/logging.h"
+#include "base/values.h"
+#include "components/fingerprint/fingerprint_policy.h"
+
 #include <memory>
 #include <utility>
 
@@ -275,6 +279,51 @@ void Permissions::TaskComplete(
   if (!resolver->GetExecutionContext() ||
       resolver->GetExecutionContext()->IsContextDestroyed())
     return;
+
+  if (result && descriptor) {
+    const auto& tp = fingerprint::FingerprintPolicy::ProcessDefault();
+    if (tp.SurfaceActive("navigator")) {
+      if (const base::DictValue* perms =
+              tp.GetSurfaceDict("navigator", "permissions")) {
+        const char* pname = nullptr;
+        switch (descriptor->name) {
+          case mojom::blink::PermissionName::GEOLOCATION:
+            pname = "geolocation"; break;
+          case mojom::blink::PermissionName::NOTIFICATIONS:
+            pname = "notifications"; break;
+          case mojom::blink::PermissionName::MIDI:
+            pname = "midi"; break;
+          case mojom::blink::PermissionName::VIDEO_CAPTURE:
+            pname = "camera"; break;
+          case mojom::blink::PermissionName::AUDIO_CAPTURE:
+            pname = "microphone"; break;
+          default: break;
+        }
+        if (pname) {
+          const auto in_group = [&](const char* g) {
+            const base::ListValue* l = perms->FindList(g);
+            if (!l) {
+              return false;
+            }
+            for (const base::Value& e : *l) {
+              const std::string* s = e.GetIfString();
+              if (s && *s == pname) {
+                return true;
+              }
+            }
+            return false;
+          };
+          if (in_group("granted")) {
+            result->status = mojom::blink::PermissionStatus::GRANTED;
+          } else if (in_group("denied")) {
+            result->status = mojom::blink::PermissionStatus::DENIED;
+          } else if (in_group("prompt")) {
+            result->status = mojom::blink::PermissionStatus::ASK;
+          }
+        }
+      }
+    }
+  }
 
   PermissionStatusListener* listener = GetOrCreatePermissionStatusListener(
       std::move(result), std::move(descriptor));

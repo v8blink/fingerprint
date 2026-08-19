@@ -28,7 +28,12 @@
 
 #include "third_party/blink/renderer/core/frame/screen.h"
 
+#include <optional>
+
+#include "base/logging.h"
 #include "base/numerics/safe_conversions.h"
+#include "base/strings/string_number_conversions.h"
+#include "components/fingerprint/fingerprint_policy.h"
 #include "services/network/public/mojom/permissions_policy/permissions_policy_feature.mojom-blink.h"
 #include "third_party/blink/renderer/core/dom/document.h"
 #include "third_party/blink/renderer/core/event_target_names.h"
@@ -87,19 +92,54 @@ bool Screen::AreWebExposedScreenPropertiesEqual(
   return true;
 }
 
+namespace {
+
+std::optional<int> TanyaScreenOverride(const char* key) {
+  const fingerprint::FingerprintPolicy& policy =
+      fingerprint::FingerprintPolicy::ProcessDefault();
+  if (!policy.enabled() || policy.IsSurfaceDisabled("screen")) {
+    return std::nullopt;
+  }
+  const base::Value* v = policy.SurfaceValue("screen", key);
+  if (!v) {
+    return std::nullopt;
+  }
+  if (std::optional<int> i = v->GetIfInt()) {
+    return i;
+  }
+  if (const std::string* s = v->GetIfString()) {
+    int parsed = 0;
+    if (base::StringToInt(*s, &parsed)) {
+      return parsed;
+    }
+  }
+  return std::nullopt;
+}
+
+}
+
 int Screen::height() const {
+  if (std::optional<int> ov = TanyaScreenOverride("height")) {
+    return *ov;
+  }
   if (!DomWindow())
     return 0;
   return GetRect(/*available=*/false).height();
 }
 
 int Screen::width() const {
+  if (std::optional<int> ov = TanyaScreenOverride("width")) {
+    return *ov;
+  }
   if (!DomWindow())
     return 0;
   return GetRect(/*available=*/false).width();
 }
 
 unsigned Screen::colorDepth() const {
+  if (std::optional<int> ov = TanyaScreenOverride("colorDepth")) {
+    return base::saturated_cast<unsigned>(*ov);
+  }
   // "If the user agent does not know the color depth or does not want to
   // return it for privacy considerations, it should return 24."
   //
@@ -115,6 +155,9 @@ unsigned Screen::colorDepth() const {
 }
 
 unsigned Screen::pixelDepth() const {
+  if (std::optional<int> ov = TanyaScreenOverride("pixelDepth")) {
+    return base::saturated_cast<unsigned>(*ov);
+  }
   return colorDepth();
 }
 
@@ -131,12 +174,18 @@ int Screen::availTop() const {
 }
 
 int Screen::availHeight() const {
+  if (std::optional<int> ov = TanyaScreenOverride("availHeight")) {
+    return *ov;
+  }
   if (!DomWindow())
     return 0;
   return GetRect(/*available=*/true).height();
 }
 
 int Screen::availWidth() const {
+  if (std::optional<int> ov = TanyaScreenOverride("availWidth")) {
+    return *ov;
+  }
   if (!DomWindow())
     return 0;
   return GetRect(/*available=*/true).width();

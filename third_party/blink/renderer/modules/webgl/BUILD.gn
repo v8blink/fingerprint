@@ -152,6 +152,8 @@ blink_modules_sources("webgl") {
     "webgl_renderbuffer.h",
     "webgl_rendering_context.cc",
     "webgl_rendering_context.h",
+    "tanya_webgl_capture_data.cc",
+    "tanya_webgl_capture_data.h",
     "webgl_rendering_context_base.cc",
     "webgl_rendering_context_base.h",
     "webgl_rendering_context_webgpu.cc",
@@ -195,6 +197,7 @@ blink_modules_sources("webgl") {
 
   public_deps = [ "//device/vr/public/mojom:vr_service_blink" ]
   deps = [
+    "//components/fingerprint",
     "//device/vr/buildflags",
     "//gpu/command_buffer/client:gles2_implementation",
     "//gpu/command_buffer/client:gles2_interface",

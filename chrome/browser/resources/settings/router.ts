@@ -32,6 +32,7 @@ export interface SettingsRoutes {
   DEFAULT_BROWSER: Route;
   DOWNLOADS: Route;
   EDIT_DICTIONARY: Route;
+  FINGERPRINT: Route;
   FONTS: Route;
   GEMINI: Route;
   GEMINI_LOGIN: Route;

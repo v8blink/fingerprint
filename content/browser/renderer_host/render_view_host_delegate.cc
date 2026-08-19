@@ -22,4 +22,8 @@ std::optional<SkColor> RenderViewHostDelegate::GetBaseBackgroundColor() {
   return std::nullopt;
 }
 
+std::string RenderViewHostDelegate::GetTanyaFingerprintProfileJson() {
+  return std::string();
+}
+
 }  // namespace content

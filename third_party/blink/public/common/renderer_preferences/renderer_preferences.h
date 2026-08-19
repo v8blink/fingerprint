@@ -100,6 +100,8 @@ struct BLINK_COMMON_EXPORT RendererPreferences {
   int autofill_shortcut_modifiers = 0;
   std::string autofill_trigger_string;
 
+  bool fingerprint_enabled{false};
+
   RendererPreferences();
   RendererPreferences(const RendererPreferences& other);
   RendererPreferences(RendererPreferences&& other);
